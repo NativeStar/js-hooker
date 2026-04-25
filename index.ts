@@ -1,3 +1,2 @@
 import {Hooker} from "./src/hooker"
-
-export {Hooker}
+export {Hooker};

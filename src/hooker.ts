@@ -1,15 +1,17 @@
 import { OriginObjects } from "./originObjects";
 import { createBypassToStringMethod, filterErrorStack } from "./util";
-import type { AnyFunctionType, MethodByName, TempHookResultWrapper, MethodHookOption, AccessorHookOption, AccessorHookMapItem, MethodHookMapItem, ObjectHookOption, ObjectHookMapItem, ConstructorPropertyName, AnyConstructorType, HookType ,HookerConstruct} from "./types"
-export class Hooker {
+import type { AnyFunctionType, MethodByName, TempHookResultWrapper, MethodHookOption, AccessorHookOption, AccessorHookMapItem, MethodHookMapItem, ObjectHookOption, ObjectHookMapItem, ConstructorPropertyName, AnyConstructorType, HookType, HookerConstruct } from "./types"
+import { StaticMethods } from "./StaticMethods";
+export class Hooker extends StaticMethods {
     private readonly hookedMethodMap: WeakMap<object, Map<string, MethodHookMapItem>> = new WeakMap();
     private readonly hookedAccessorMap: WeakMap<object, Map<string, AccessorHookMapItem>> = new WeakMap();
     private readonly hookedObjectMap: WeakMap<object, Map<string, ObjectHookMapItem>> = new WeakMap();
     private readonly HOOKED_SYMBOL = Symbol();
     private readonly GET_ORIGIN_METHOD_SYMBOL = Symbol();
     private originObjectSource = OriginObjects;
-    constructor(option:HookerConstruct){
-        if(option.originReference) this.originObjectSource = option.originReference;
+    constructor(option: HookerConstruct) {
+        super(option);
+        if (option.originReference) this.originObjectSource = option.originReference;
     }
     setOriginObjectSource(source: typeof OriginObjects) {
         this.originObjectSource = source;
@@ -114,7 +116,7 @@ export class Hooker {
                     methodName,
                     option: [hookOption]
                 }
-                this.setMethodHookItem(parent, methodName, hookItem);
+                this.setHookItem("method",parent, methodName, hookItem);
                 return true;
             }
             return false;
@@ -230,7 +232,7 @@ export class Hooker {
                     methodName,
                     option: [hookOption]
                 }
-                this.setMethodHookItem(parent, methodName, hookItem);
+                this.setHookItem("method",parent, methodName, hookItem);
                 return true;
             }
             return false;
@@ -390,7 +392,7 @@ export class Hooker {
                 originSetter: originSetter ?? null,
                 option: [hookOption]
             }
-            this.setAccessorHookItem(parent, target, hookItem);
+            this.setHookItem("accessor",parent, target, hookItem);
             return true;
         }
         return false;
@@ -559,7 +561,7 @@ export class Hooker {
                     objectName,
                     option: [hookOption]
                 }
-                this.setObjectHookItem(parent, objectName, hookItem);
+                this.setHookItem("object",parent, objectName, hookItem);
                 return true;
             }
             return false
@@ -615,27 +617,26 @@ export class Hooker {
         })();
         return rootMap.get(parent)?.get(name) ?? null;
     }
-    private setObjectHookItem(parent: object, objectName: string, item: ObjectHookMapItem) {
-        let parentMap = this.hookedObjectMap.get(parent);
+    private setHookItem(type: "method", parent: object, name: string, item: MethodHookMapItem): void
+    private setHookItem(type: "object", parent: object, name: string, item: ObjectHookMapItem): void
+    private setHookItem(type: "accessor", parent: object, name: string, item: AccessorHookMapItem): void
+    private setHookItem(type: HookType, parent: object, name: string, item: any) {
+        const rootMap = (() => {
+            switch (type) {
+                case "method":
+                    return this.hookedMethodMap;
+                case "accessor":
+                    return this.hookedAccessorMap;
+                case "object":
+                    return this.hookedObjectMap;
+                default:
+                    throw new TypeError(`Invalid hook type: ${type}`);
+            }
+        })();
+        let parentMap = rootMap.get(parent);
         if (!parentMap) {
             parentMap = new Map();
-            this.hookedObjectMap.set(parent, parentMap);
-        }
-        parentMap.set(objectName, item);
-    }
-    private setMethodHookItem(parent: object, methodName: string, item: MethodHookMapItem) {
-        let parentMap = this.hookedMethodMap.get(parent);
-        if (!parentMap) {
-            parentMap = new Map();
-            this.hookedMethodMap.set(parent, parentMap);
-        }
-        parentMap.set(methodName, item);
-    }
-    private setAccessorHookItem(parent: object, name: string, item: AccessorHookMapItem) {
-        let parentMap = this.hookedAccessorMap.get(parent);
-        if (!parentMap) {
-            parentMap = new Map();
-            this.hookedAccessorMap.set(parent, parentMap);
+            rootMap.set(parent, parentMap as any);
         }
         parentMap.set(name, item);
     }
