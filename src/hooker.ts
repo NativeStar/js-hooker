@@ -1,19 +1,22 @@
 import { OriginObjects } from "./originObjects";
 import { createBypassToStringMethod, filterErrorStack } from "./util";
-import type { AnyFunctionType, MethodByName, TempHookResultWrapper, MethodHookOption, AccessorHookOption, AccessorHookMapItem, MethodHookMapItem, ObjectHookOption, ObjectHookMapItem, ConstructorPropertyName, AnyConstructorType, HookType } from "./types"
-const hookedMethodMap: WeakMap<object, Map<string, MethodHookMapItem>> = new WeakMap();
-const hookedAccessorMap: WeakMap<object, Map<string, AccessorHookMapItem>> = new WeakMap();
-const hookedObjectMap: WeakMap<object, Map<string, ObjectHookMapItem>> = new WeakMap();
-const HOOKED_SYMBOL = Symbol();
-const GET_ORIGIN_METHOD_SYMBOL = Symbol();
+import type { AnyFunctionType, MethodByName, TempHookResultWrapper, MethodHookOption, AccessorHookOption, AccessorHookMapItem, MethodHookMapItem, ObjectHookOption, ObjectHookMapItem, ConstructorPropertyName, AnyConstructorType, HookType ,HookerConstruct} from "./types"
 export class Hooker {
-    private static originObjectSource = OriginObjects;
-    static setOriginObjectSource(source: typeof OriginObjects) {
+    private readonly hookedMethodMap: WeakMap<object, Map<string, MethodHookMapItem>> = new WeakMap();
+    private readonly hookedAccessorMap: WeakMap<object, Map<string, AccessorHookMapItem>> = new WeakMap();
+    private readonly hookedObjectMap: WeakMap<object, Map<string, ObjectHookMapItem>> = new WeakMap();
+    private readonly HOOKED_SYMBOL = Symbol();
+    private readonly GET_ORIGIN_METHOD_SYMBOL = Symbol();
+    private originObjectSource = OriginObjects;
+    constructor(option:HookerConstruct){
+        if(option.originReference) this.originObjectSource = option.originReference;
+    }
+    setOriginObjectSource(source: typeof OriginObjects) {
         this.originObjectSource = source;
     }
-    static hookMethod<P extends object, K extends keyof P, F extends Extract<P[K], AnyFunctionType>, T = ReturnType<F>>(parent: P, target: K, hookOption: MethodHookOption<F>): boolean;
-    static hookMethod<P extends object, K extends string, F extends MethodByName<P, K> = MethodByName<P, K>>(parent: P, target: K, hookOption: MethodHookOption<F>): boolean;
-    static hookMethod(parent: any, methodName: string, hookOption: MethodHookOption<AnyFunctionType>): boolean {
+    hookMethod<P extends object, K extends keyof P, F extends Extract<P[K], AnyFunctionType>, T = ReturnType<F>>(parent: P, target: K, hookOption: MethodHookOption<F>): boolean;
+    hookMethod<P extends object, K extends string, F extends MethodByName<P, K> = MethodByName<P, K>>(parent: P, target: K, hookOption: MethodHookOption<F>): boolean;
+    hookMethod(parent: any, methodName: string, hookOption: MethodHookOption<AnyFunctionType>): boolean {
         try {
             if (!parent || typeof parent[methodName] !== 'function') {
                 return false;
@@ -25,7 +28,7 @@ export class Hooker {
                 const rawOrigin = this.getOriginExecutable(methodExecutable);
                 if (rawOrigin !== null) originMethod = rawOrigin
             }
-            const currentHookMethodItem = this.getHookItem("method",parent, methodName)
+            const currentHookMethodItem = this.getHookItem("method", parent, methodName)
             if (currentHookMethodItem) {
                 //判断id是否重复
                 if (hookOption.id && currentHookMethodItem.option.some(item => item.id === hookOption.id)) {
@@ -43,8 +46,8 @@ export class Hooker {
                 configurable: true,
             });
             const hookEntryProxy = new this.originObjectSource.Proxy(originMethod, {
-                apply(_target, thisArg, args) {
-                    const hookItem = Hooker.getHookItem("method",parent, methodName)
+                apply: (_target, thisArg, args) => {
+                    const hookItem = this.getHookItem("method", parent, methodName)
                     if (!hookItem || hookItem.option.length === 0) {
                         try {
                             //没有hook
@@ -59,7 +62,7 @@ export class Hooker {
                     const tempResult: TempHookResultWrapper<ReturnType<typeof methodExecutable>> = {
                         current: undefined
                     }
-                    const abortController = new Hooker.originObjectSource.AbortController();
+                    const abortController = new this.originObjectSource.AbortController();
                     for (const currentHookOption of hookItem.option) {
                         currentHookOption.beforeMethodInvoke?.(args, abortController, thisArg, tempResult, originMethod as AnyFunctionType);
                     }
@@ -79,17 +82,17 @@ export class Hooker {
                     }
                     return tempResult.current;
                 },
-                has(target, p) {
-                    if (p === HOOKED_SYMBOL) {
+                has: (target, p) => {
+                    if (p === this.HOOKED_SYMBOL) {
                         return true;
                     }
-                    return Hooker.originObjectSource.Reflect.has(target, p);
+                    return this.originObjectSource.Reflect.has(target, p);
                 },
-                get(target, p) {
-                    if (p === GET_ORIGIN_METHOD_SYMBOL) {
+                get: (target, p) => {
+                    if (p === this.GET_ORIGIN_METHOD_SYMBOL) {
                         return originMethod;
                     }
-                    return Hooker.originObjectSource.Reflect.get(target, p);
+                    return this.originObjectSource.Reflect.get(target, p);
                 }
             });
             const originDescriptor = this.originObjectSource.Reflect.getOwnPropertyDescriptor(parent, methodName) ?? {
@@ -121,9 +124,9 @@ export class Hooker {
         }
     }
 
-    static hookAsyncMethod<P extends object, K extends keyof P, F extends Extract<P[K], AnyFunctionType>, T = Awaited<ReturnType<F>>>(parent: P, target: K, hookOption: MethodHookOption<F, Awaited<ReturnType<F>>>): boolean;
-    static hookAsyncMethod<P extends object, K extends string, F extends MethodByName<P, K> = MethodByName<P, K>>(parent: P, target: K, hookOption: MethodHookOption<F, Awaited<ReturnType<F>>>): boolean;
-    static hookAsyncMethod(parent: Record<string, any>, methodName: string, hookOption: MethodHookOption<AnyFunctionType>): boolean {
+    hookAsyncMethod<P extends object, K extends keyof P, F extends Extract<P[K], AnyFunctionType>, T = Awaited<ReturnType<F>>>(parent: P, target: K, hookOption: MethodHookOption<F, Awaited<ReturnType<F>>>): boolean;
+    hookAsyncMethod<P extends object, K extends string, F extends MethodByName<P, K> = MethodByName<P, K>>(parent: P, target: K, hookOption: MethodHookOption<F, Awaited<ReturnType<F>>>): boolean;
+    hookAsyncMethod(parent: Record<string, any>, methodName: string, hookOption: MethodHookOption<AnyFunctionType>): boolean {
         try {
             if (!parent || typeof parent[methodName] !== 'function') {
                 return false;
@@ -134,7 +137,7 @@ export class Hooker {
                 const rawOrigin = this.getOriginExecutable(methodExecutable);
                 if (rawOrigin !== null) originMethod = rawOrigin
             }
-            const currentHookMethodItem = this.getHookItem("method",parent, methodName)
+            const currentHookMethodItem = this.getHookItem("method", parent, methodName)
             if (currentHookMethodItem) {
                 //判断id是否重复
                 if (hookOption.id && currentHookMethodItem.option.some(item => item.id === hookOption.id)) {
@@ -155,9 +158,9 @@ export class Hooker {
                 this.originObjectSource.console.warn("Error on create bypass toString detect method:", error);
             }
             const hookEntry = new this.originObjectSource.Proxy(originMethod, {
-                apply(_target, thisArg, args) {
-                    return new Hooker.originObjectSource.Promise<any>(async (resolve, reject) => {
-                        const hookItem = Hooker.getHookItem("method",parent, methodName)
+                apply: (_target, thisArg, args) => {
+                    return new this.originObjectSource.Promise<any>(async (resolve, reject) => {
+                        const hookItem = this.getHookItem("method", parent, methodName)
                         if (!hookItem || hookItem.option.length == 0) {
                             try {
                                 resolve(await originMethod.apply(thisArg, args));
@@ -173,7 +176,7 @@ export class Hooker {
                         const tempResult: TempHookResultWrapper<Awaited<ReturnType<typeof methodExecutable>>> = {
                             current: undefined
                         }
-                        const abortController = new Hooker.originObjectSource.AbortController();
+                        const abortController = new this.originObjectSource.AbortController();
                         for (const currentHookOption of hookItem.option) {
                             currentHookOption.beforeMethodInvoke?.(args, abortController, thisArg, tempResult, originMethod as AnyFunctionType);
                         }
@@ -196,17 +199,17 @@ export class Hooker {
                         resolve(tempResult.current);
                     })
                 },
-                has(target, p) {
-                    if (p === HOOKED_SYMBOL) {
+                has: (target, p) => {
+                    if (p === this.HOOKED_SYMBOL) {
                         return true;
                     }
-                    return Hooker.originObjectSource.Reflect.has(target, p);
+                    return this.originObjectSource.Reflect.has(target, p);
                 },
-                get(target, p) {
-                    if (p === GET_ORIGIN_METHOD_SYMBOL) {
+                get: (target, p) => {
+                    if (p === this.GET_ORIGIN_METHOD_SYMBOL) {
                         return originMethod;
                     }
-                    return Hooker.originObjectSource.Reflect.get(target, p);
+                    return this.originObjectSource.Reflect.get(target, p);
                 }
             })
             const originDescriptor = this.originObjectSource.Reflect.getOwnPropertyDescriptor(parent, methodName) ?? {
@@ -236,10 +239,10 @@ export class Hooker {
             return false;
         }
     }
-    static hookAccessor<P extends object, K extends keyof P>(parent: P, target: K, hookOption: AccessorHookOption<P, K>): boolean;
-    static hookAccessor(parent: any, target: string, hookOption: AccessorHookOption<any, any>) {
+    hookAccessor<P extends object, K extends keyof P>(parent: P, target: K, hookOption: AccessorHookOption<P, K>): boolean;
+    hookAccessor(parent: any, target: string, hookOption: AccessorHookOption<any, any>) {
         if (!parent) return false
-        const currentHookItem = this.getHookItem("accessor",parent, target);
+        const currentHookItem = this.getHookItem("accessor", parent, target);
         if (currentHookItem) {
             //判断id是否重复
             if (hookOption.id && currentHookItem.option.some(item => item.id === hookOption.id)) {
@@ -273,8 +276,8 @@ export class Hooker {
                 configurable: true,
             });
             tempHookEntry.getter = new this.originObjectSource.Proxy(originGetter, {
-                apply(_target, thisArg) {
-                    const hookItem = Hooker.getHookItem("accessor",parent, target);
+                apply: (_target, thisArg) => {
+                    const hookItem = this.getHookItem("accessor", parent, target);
                     if (!hookItem || hookItem.option.length == 0) {
                         try {
                             //没有hook
@@ -289,7 +292,7 @@ export class Hooker {
                     const tempResult: TempHookResultWrapper<ReturnType<typeof originGetter>> = {
                         current: undefined
                     }
-                    const abortController = new Hooker.originObjectSource.AbortController();
+                    const abortController = new this.originObjectSource.AbortController();
                     for (const currentHookOption of hookItem.option) {
                         currentHookOption.beforeGetterInvoke?.(abortController, thisArg, tempResult);
                     }
@@ -309,17 +312,17 @@ export class Hooker {
                     }
                     return tempResult.current;
                 },
-                has(target, p) {
-                    if (p === HOOKED_SYMBOL) {
+                has: (target, p) => {
+                    if (p === this.HOOKED_SYMBOL) {
                         return true;
                     }
-                    return Hooker.originObjectSource.Reflect.has(target, p);
+                    return this.originObjectSource.Reflect.has(target, p);
                 },
-                get(target, p) {
-                    if (p === GET_ORIGIN_METHOD_SYMBOL) {
+                get: (target, p) => {
+                    if (p === this.GET_ORIGIN_METHOD_SYMBOL) {
                         return originGetter;
                     }
-                    return Hooker.originObjectSource.Reflect.get(target, p);
+                    return this.originObjectSource.Reflect.get(target, p);
                 },
             });
         }
@@ -331,8 +334,8 @@ export class Hooker {
                 configurable: true,
             });
             tempHookEntry.setter = new this.originObjectSource.Proxy(originSetter, {
-                apply(_target, thisArg, arg: [any]) {
-                    const hookItem = Hooker.getHookItem("accessor",parent, target);
+                apply: (_target, thisArg, arg: [any]) => {
+                    const hookItem = this.getHookItem("accessor", parent, target);
                     if (!hookItem || hookItem.option.length == 0) {
                         try {
                             //没有hook
@@ -344,7 +347,7 @@ export class Hooker {
                             throw error;
                         }
                     }
-                    const abortController = new Hooker.originObjectSource.AbortController();
+                    const abortController = new this.originObjectSource.AbortController();
                     for (const currentHookOption of hookItem.option) {
                         currentHookOption.beforeSetterInvoke?.(arg[0], abortController, thisArg);
                     }
@@ -361,17 +364,17 @@ export class Hooker {
                     }
                     return
                 },
-                has(target, p) {
-                    if (p === HOOKED_SYMBOL) {
+                has: (target, p) => {
+                    if (p === this.HOOKED_SYMBOL) {
                         return true;
                     }
-                    return Hooker.originObjectSource.Reflect.has(target, p);
+                    return this.originObjectSource.Reflect.has(target, p);
                 },
-                get(target, p) {
-                    if (p === GET_ORIGIN_METHOD_SYMBOL) {
+                get: (target, p) => {
+                    if (p === this.GET_ORIGIN_METHOD_SYMBOL) {
                         return originSetter;
                     }
-                    return Hooker.originObjectSource.Reflect.get(target, p);
+                    return this.originObjectSource.Reflect.get(target, p);
                 },
             });
         }
@@ -392,9 +395,9 @@ export class Hooker {
         }
         return false;
     }
-    static hookObject<P extends object, K extends ConstructorPropertyName<P>>(parent: P, target: K, hookOption: ObjectHookOption<Extract<P[K], AnyConstructorType>>): boolean;
-    static hookObject<T extends AnyConstructorType>(parent: object, target: string, hookOption: ObjectHookOption<T>): boolean
-    static hookObject(parent: any, objectName: string, hookOption: ObjectHookOption<AnyConstructorType>): boolean {
+    hookObject<P extends object, K extends ConstructorPropertyName<P>>(parent: P, target: K, hookOption: ObjectHookOption<Extract<P[K], AnyConstructorType>>): boolean;
+    hookObject<T extends AnyConstructorType>(parent: object, target: string, hookOption: ObjectHookOption<T>): boolean
+    hookObject(parent: any, objectName: string, hookOption: ObjectHookOption<AnyConstructorType>): boolean {
         try {
             // 只支持hook构造函数
             if (!parent || typeof parent[objectName] !== 'function') {
@@ -406,7 +409,7 @@ export class Hooker {
                 const tempOriginObject = this.getOriginExecutable(rawObject);
                 if (tempOriginObject !== null) originObject = tempOriginObject
             }
-            const currentHookItem = this.getHookItem("object",parent, objectName);
+            const currentHookItem = this.getHookItem("object", parent, objectName);
             if (currentHookItem) {
                 if (hookOption.id && currentHookItem.option.some(item => item.id === hookOption.id)) {
                     this.originObjectSource.console.warn(`already has object hook id:${hookOption.id}`);
@@ -422,12 +425,12 @@ export class Hooker {
                 configurable: true,
             });
             const hookProxy = new this.originObjectSource.Proxy(originObject, {
-                get(target, p, receiver) {
-                    if (p === GET_ORIGIN_METHOD_SYMBOL) {
+                get: (target, p, receiver) => {
+                    if (p === this.GET_ORIGIN_METHOD_SYMBOL) {
                         return originObject;
                     }
-                    const hookItems = Hooker.getHookItem("object",parent, objectName);
-                    const tempResult: TempHookResultWrapper<any> = { current: Hooker.originObjectSource.Reflect.get(target, p, receiver) };
+                    const hookItems = this.getHookItem("object", parent, objectName);
+                    const tempResult: TempHookResultWrapper<any> = { current: this.originObjectSource.Reflect.get(target, p, receiver) };
                     if (!hookItems || hookItems.option.length == 0) {
                         //没有hook
                         return tempResult.current;
@@ -437,12 +440,12 @@ export class Hooker {
                     }
                     return tempResult.current;
                 },
-                has(target, p) {
-                    if (p === HOOKED_SYMBOL) {
+                has: (target, p) => {
+                    if (p === this.HOOKED_SYMBOL) {
                         return true;
                     }
-                    const hookItems = Hooker.getHookItem("object",parent, objectName);
-                    const tempResult: TempHookResultWrapper<any> = { current: Hooker.originObjectSource.Reflect.has(target, p) };
+                    const hookItems = this.getHookItem("object", parent, objectName);
+                    const tempResult: TempHookResultWrapper<any> = { current: this.originObjectSource.Reflect.has(target, p) };
                     if (!hookItems || hookItems.option.length == 0) {
                         //没有hook
                         return tempResult.current;
@@ -452,13 +455,13 @@ export class Hooker {
                     }
                     return tempResult.current;
                 },
-                construct(target, argArray, newTarget) {
-                    const hookItems = Hooker.getHookItem("object",parent, objectName);
+                construct: (target, argArray, newTarget) => {
+                    const hookItems = this.getHookItem("object", parent, objectName);
                     const tempResult: TempHookResultWrapper<any> = { current: null };
                     if (!hookItems || hookItems.option.length == 0) {
                         try {
                             //没有hook
-                            return Hooker.originObjectSource.Reflect.construct(target, argArray, newTarget)
+                            return this.originObjectSource.Reflect.construct(target, argArray, newTarget)
                         } catch (error: any) {
                             if (error.stack) {
                                 error.stack = filterErrorStack(error.stack);
@@ -467,14 +470,14 @@ export class Hooker {
                         }
                     }
                     try {
-                        const abortController = new Hooker.originObjectSource.AbortController();
+                        const abortController = new this.originObjectSource.AbortController();
                         for (const beforeHookOption of hookItems.option) {
                             beforeHookOption?.beforeConstruct?.(argArray, abortController, tempResult, target as AnyConstructorType);
                         }
                         if (abortController.signal.aborted) {
                             return tempResult.current;
                         }
-                        tempResult.current = Hooker.originObjectSource.Reflect.construct(target, argArray, newTarget);
+                        tempResult.current = this.originObjectSource.Reflect.construct(target, argArray, newTarget);
                         for (const afterHookOption of hookItems.option) {
                             afterHookOption.afterConstruct?.(argArray, tempResult, target as AnyConstructorType)
                         }
@@ -486,32 +489,32 @@ export class Hooker {
                     }
                     return tempResult.current;
                 },
-                set(target, p, newValue, receiver) {
-                    const hookItems = Hooker.getHookItem("object",parent, objectName);
+                set: (target, p, newValue, receiver) => {
+                    const hookItems = this.getHookItem("object", parent, objectName);
                     //用于修改set值
                     const tempNewValue: TempHookResultWrapper<any> = { current: newValue };
                     //用于修改trap返回值 只在aborted时生效
                     const tempReturnValue: TempHookResultWrapper<boolean> = { current: true };
                     if (!hookItems || hookItems.option.length == 0) {
                         //没有hook
-                        return Hooker.originObjectSource.Reflect.set(target, p, newValue, receiver);
+                        return this.originObjectSource.Reflect.set(target, p, newValue, receiver);
                     }
-                    const abortController = new Hooker.originObjectSource.AbortController();
+                    const abortController = new this.originObjectSource.AbortController();
                     for (const hookOption of hookItems.option) {
                         hookOption.beforeSet?.(p, newValue, abortController, tempNewValue, tempReturnValue)
                     }
                     if (abortController.signal.aborted) {
                         return tempReturnValue.current
                     }
-                    return Hooker.originObjectSource.Reflect.set(target, p, tempNewValue.current, receiver);
+                    return this.originObjectSource.Reflect.set(target, p, tempNewValue.current, receiver);
                 },
-                deleteProperty(target, p) {
-                    const hookItems = Hooker.getHookItem("object",parent, objectName);
+                deleteProperty: (target, p) => {
+                    const hookItems = this.getHookItem("object", parent, objectName);
                     if (!hookItems || hookItems.option.length == 0) {
                         //没有hook
-                        return Hooker.originObjectSource.Reflect.deleteProperty(target, p);
+                        return this.originObjectSource.Reflect.deleteProperty(target, p);
                     }
-                    const allowDelete = new Hooker.originObjectSource.AbortController();
+                    const allowDelete = new this.originObjectSource.AbortController();
                     const tempResult: TempHookResultWrapper<boolean> = { current: true };
                     for (const hookOption of hookItems.option) {
                         hookOption.beforeDelete?.(p, allowDelete, tempResult);
@@ -519,15 +522,15 @@ export class Hooker {
                     if (allowDelete.signal.aborted) {
                         return tempResult.current
                     }
-                    tempResult.current = Hooker.originObjectSource.Reflect.deleteProperty(target, p);
+                    tempResult.current = this.originObjectSource.Reflect.deleteProperty(target, p);
                     return tempResult.current;
                 },
-                defineProperty(target, property, attributes) {
-                    const hookItem = Hooker.getHookItem("object",parent, objectName);
+                defineProperty: (target, property, attributes) => {
+                    const hookItem = this.getHookItem("object", parent, objectName);
                     if (!hookItem || hookItem.option.length === 0) {
-                        return Hooker.originObjectSource.Reflect.defineProperty(target, property, attributes);
+                        return this.originObjectSource.Reflect.defineProperty(target, property, attributes);
                     }
-                    const abortController = new Hooker.originObjectSource.AbortController();
+                    const abortController = new this.originObjectSource.AbortController();
                     const tempResult: TempHookResultWrapper<boolean> = { current: true };
                     for (const option of hookItem.option) {
                         option.beforeDefineProperty?.(property, attributes, abortController, tempResult);
@@ -535,7 +538,7 @@ export class Hooker {
                     if (abortController.signal.aborted) {
                         return tempResult.current;
                     }
-                    return Hooker.originObjectSource.Reflect.defineProperty(target, property, attributes);
+                    return this.originObjectSource.Reflect.defineProperty(target, property, attributes);
                 },
             });
             const originDescriptor = this.originObjectSource.Reflect.getOwnPropertyDescriptor(parent, objectName) ?? {
@@ -565,15 +568,15 @@ export class Hooker {
             return false;
         }
     }
-    static unhook(type: HookType, parent: object, name: string, id: string) {
+    unhook(type: HookType, parent: object, name: string, id: string) {
         const targetMap = (() => {
             switch (type) {
                 case "method":
-                    return hookedMethodMap
+                    return this.hookedMethodMap
                 case "accessor":
-                    return hookedAccessorMap
+                    return this.hookedAccessorMap
                 case "object":
-                    return hookedObjectMap
+                    return this.hookedObjectMap
                 default:
                     return null
             }
@@ -591,53 +594,53 @@ export class Hooker {
         }
         if (childHookList.option.length === 0) parentHookList.delete(name);
     }
-    static getOriginExecutable(target: Function | object) {
-        return this.originObjectSource.Reflect.get(target, GET_ORIGIN_METHOD_SYMBOL) ?? null;
+    getOriginExecutable(target: Function | object) {
+        return this.originObjectSource.Reflect.get(target, this.GET_ORIGIN_METHOD_SYMBOL) ?? null;
     }
-    private static getHookItem(type:"method",parent: object, name: string):MethodHookMapItem | null
-    private static getHookItem(type:"object",parent: object, name: string):ObjectHookMapItem | null
-    private static getHookItem(type:"accessor",parent: object, name: string):AccessorHookMapItem | null
-    private static getHookItem(type: HookType, parent: object, name: string):any{
+    private getHookItem(type: "method", parent: object, name: string): MethodHookMapItem | null
+    private getHookItem(type: "object", parent: object, name: string): ObjectHookMapItem | null
+    private getHookItem(type: "accessor", parent: object, name: string): AccessorHookMapItem | null
+    private getHookItem(type: HookType, parent: object, name: string): any {
         const rootMap = (() => {
             switch (type) {
                 case "method":
-                    return hookedMethodMap;
+                    return this.hookedMethodMap;
                 case "accessor":
-                    return hookedAccessorMap;
+                    return this.hookedAccessorMap;
                 case "object":
-                    return hookedObjectMap;
+                    return this.hookedObjectMap;
                 default:
                     throw new TypeError(`Invalid hook type: ${type}`);
             }
         })();
-        return rootMap.get(parent)?.get(name)??null;
+        return rootMap.get(parent)?.get(name) ?? null;
     }
-    private static setObjectHookItem(parent: object, objectName: string, item: ObjectHookMapItem) {
-        let parentMap = hookedObjectMap.get(parent);
+    private setObjectHookItem(parent: object, objectName: string, item: ObjectHookMapItem) {
+        let parentMap = this.hookedObjectMap.get(parent);
         if (!parentMap) {
             parentMap = new Map();
-            hookedObjectMap.set(parent, parentMap);
+            this.hookedObjectMap.set(parent, parentMap);
         }
         parentMap.set(objectName, item);
     }
-    private static setMethodHookItem(parent: object, methodName: string, item: MethodHookMapItem) {
-        let parentMap = hookedMethodMap.get(parent);
+    private setMethodHookItem(parent: object, methodName: string, item: MethodHookMapItem) {
+        let parentMap = this.hookedMethodMap.get(parent);
         if (!parentMap) {
             parentMap = new Map();
-            hookedMethodMap.set(parent, parentMap);
+            this.hookedMethodMap.set(parent, parentMap);
         }
         parentMap.set(methodName, item);
     }
-    private static setAccessorHookItem(parent: object, name: string, item: AccessorHookMapItem) {
-        let parentMap = hookedAccessorMap.get(parent);
+    private setAccessorHookItem(parent: object, name: string, item: AccessorHookMapItem) {
+        let parentMap = this.hookedAccessorMap.get(parent);
         if (!parentMap) {
             parentMap = new Map();
-            hookedAccessorMap.set(parent, parentMap);
+            this.hookedAccessorMap.set(parent, parentMap);
         }
         parentMap.set(name, item);
     }
-    static isHooked(method: any) {
+    isHooked(method: any) {
         if (!method) return false;
-        return this.originObjectSource.Reflect.has(method, HOOKED_SYMBOL);
+        return this.originObjectSource.Reflect.has(method, this.HOOKED_SYMBOL);
     }
 }

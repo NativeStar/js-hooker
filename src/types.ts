@@ -1,3 +1,5 @@
+import type { OriginObjects } from "./originObjects";
+
 export type HookType="method"|"accessor"|"object"
 export type AnyFunctionType = (...args: any[]) => any;
 export type AnyConstructorType = abstract new (...args: any[]) => any;
@@ -8,6 +10,10 @@ export type MethodByName<P extends object, K extends string> = K extends keyof P
 export type ConstructorPropertyName<P extends object> = Extract<{
     [K in keyof P]-?: P[K] extends AnyConstructorType ? K : never
 }[keyof P], string>;
+export interface HookerConstruct {
+    originReference?: typeof OriginObjects
+    enableBypassDefault?: boolean
+}
 export interface MethodHookOption<F extends AnyFunctionType, R = ReturnType<F>> {
     descriptor?: Omit<PropertyDescriptor, "set" | "get" | "value">;
     /**
