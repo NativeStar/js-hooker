@@ -1,0 +1,44 @@
+export const OriginObjects={
+    AbortController,
+    TypeError,
+    Promise,
+    Object:{
+        freeze:Object.freeze,
+    },
+    Reflect:{
+        construct:Reflect.construct,
+        has:Reflect.has,
+        get:Reflect.get,
+        set:Reflect.set,
+        defineProperty:Reflect.defineProperty,
+        getOwnPropertyDescriptor:Reflect.getOwnPropertyDescriptor,
+        deleteProperty:Reflect.deleteProperty
+    },
+    Proxy,
+    String:{
+        toString:String.prototype.toString,
+        includes:String.prototype.includes,
+    },
+    console:{
+        log:console.log,
+        warn:console.warn,
+        error:console.error
+    },
+    document:{
+        createElement:document.createElement.bind(document),
+    },
+    open,
+    navigator:{
+        clipboard:{
+            writeText:navigator.clipboard?navigator.clipboard.writeText.bind(navigator.clipboard):null,
+            write:navigator.clipboard?navigator.clipboard.write.bind(navigator.clipboard):null,
+        }
+    },
+    Error:{
+        captureStackTrace:Error.captureStackTrace
+    },
+    JSON:{
+        stringify:JSON.stringify
+    }
+}
+OriginObjects.Object.freeze(OriginObjects);
