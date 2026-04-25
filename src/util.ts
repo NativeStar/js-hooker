@@ -1,4 +1,4 @@
-import { OriginObjects } from "./originObjects";
+import {type OriginObjects } from "./originObjects";
 const leakedStackFeature = [
     "at Object.apply (<anonymous>:",
     "hookEntry (<anonymous>:",
@@ -15,45 +15,45 @@ const leakedStackFeature = [
     "beforeConstruct",
     "afterConstruct"
 ]
-export function needDeleteStack(stack: string): boolean {
+export function needDeleteStack(originRef:typeof OriginObjects,stack: string): boolean {
     for (const leakStr of leakedStackFeature) {
-        if (OriginObjects.String.includes.call(stack, leakStr)) {
+        if (originRef.Reflect.apply(originRef.String.includes, stack, [leakStr])) {
             return false;
         }
     }
     return true;
 }
-export function filterErrorStack(stack: string) {
-    const splitStack = stack.split("\n");
-    const filteredStack = splitStack.filter(line => needDeleteStack(line))
-    return filteredStack.join("\n");
+export function filterErrorStack(originRef:typeof OriginObjects,stack: string) {
+    const splitStack = originRef.Reflect.apply(originRef.String.split, stack, ["\n"]);
+    const filteredStack = originRef.Reflect.apply(originRef.Array.filter, splitStack, [line => needDeleteStack(originRef, line)]);
+    return originRef.Reflect.apply(originRef.Array.join, filteredStack, ["\n"]);
 }
-export function createBypassToStringMethod(methodName: string,targetType:"normal"|"get"|"set"="normal"): () => string {
+export function createBypassToStringMethod(originRef:typeof OriginObjects,methodName: string,targetType:"normal"|"get"|"set"="normal"): () => string {
     const toString = function (this: any) {
         if (!(this instanceof Function)) {
-            const error = new TypeError("Function.prototype.toString requires that 'this' be a Function");
-            error.stack = filterErrorStack((error.stack) as string);
+            const error = new originRef.TypeError("Function.prototype.toString requires that 'this' be a Function");
+            error.stack = filterErrorStack(originRef,(error.stack) as string);
             throw error;
         }
         return `function ${targetType==="normal"?"":`${targetType} `}${methodName}() { [native code] }`;
     }
-    OriginObjects.Reflect.defineProperty(toString,"name",{value: "toString"})
-    toString.toString = getFakeNativeToString();
-    toString.toString.toString = getFakeNativeToString();
+    originRef.Reflect.defineProperty(toString,"name",{value: "toString"})
+    toString.toString = getFakeNativeToString(originRef);
+    toString.toString.toString = getFakeNativeToString(originRef);
     toString.prototype = void 0;
     toString.toString.prototype = void 0;
     return toString;
 }
-function getFakeNativeToString() {
+function getFakeNativeToString(originRef:typeof OriginObjects) {
     const toString = function (this: any) {
         if (!(this instanceof Function)) {
-            const error = new OriginObjects.TypeError("Function.prototype.toString requires that 'this' be a Function");
-            error.stack = filterErrorStack((error.stack) as string);
+            const error = new originRef.TypeError("Function.prototype.toString requires that 'this' be a Function");
+            error.stack = filterErrorStack(originRef,(error.stack) as string);
             throw error;
         }
         return "function toString() { [native code] }"
     };
-    OriginObjects.Reflect.defineProperty(toString,"name",{value: "toString"})
+    originRef.Reflect.defineProperty(toString,"name",{value: "toString"})
     toString.toString = toString;
     toString.prototype = void 0;
     return toString;
