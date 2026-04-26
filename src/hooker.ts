@@ -6,13 +6,12 @@ export class Hooker extends StaticMethods {
     private readonly hookedMethodMap: WeakMap<object, Map<string, MethodHookMapItem>> = new WeakMap();
     private readonly hookedAccessorMap: WeakMap<object, Map<string, AccessorHookMapItem>> = new WeakMap();
     private readonly hookedObjectMap: WeakMap<object, Map<string, ObjectHookMapItem>> = new WeakMap();
-    private readonly HOOKED_TAG_SYMBOL:symbol
-    //TODO
-    private readonly enableBypassDefault:boolean;
-    private readonly originObjectReference:typeof OriginObjects;
+    private readonly HOOKED_TAG_SYMBOL: symbol
+    private readonly enableBypassDefault: boolean;
+    private readonly originObjectReference: typeof OriginObjects;
     constructor(option?: HookerConstruct) {
         super(option);
-        this.originObjectReference = option?.originReference??OriginObjects;
+        this.originObjectReference = option?.originReference ?? OriginObjects;
         this.enableBypassDefault = option?.enableBypassDefault ?? true;
         this.HOOKED_TAG_SYMBOL = option?.internalTagSymbol ?? Symbol();
     }
@@ -41,7 +40,7 @@ export class Hooker extends StaticMethods {
                 return true
             }
             // 屏蔽枚举和重写
-            this.originObjectReference.Reflect.defineProperty(originMethod, 'toString', {
+            if (this.enableBypassDefault||hookOption.enableBypass) this.originObjectReference.Reflect.defineProperty(originMethod, 'toString', {
                 value: createBypassToStringMethod(this.originObjectReference, methodName),
                 writable: false,
                 enumerable: false,
@@ -114,7 +113,8 @@ export class Hooker extends StaticMethods {
                     originParent: parent,
                     originMethod: originMethod as AnyFunctionType,
                     methodName,
-                    option: [hookOption]
+                    option: [hookOption],
+                    originDescriptor
                 }
                 this.setHookItem("method", parent, methodName, hookItem);
                 return true;
@@ -150,7 +150,7 @@ export class Hooker extends StaticMethods {
                 return true
             }
             try {
-                this.originObjectReference.Reflect.defineProperty(originMethod, 'toString', {
+                if (this.enableBypassDefault||hookOption.enableBypass) this.originObjectReference.Reflect.defineProperty(originMethod, 'toString', {
                     value: createBypassToStringMethod(this.originObjectReference, methodName),
                     writable: false,
                     enumerable: false,
@@ -230,7 +230,8 @@ export class Hooker extends StaticMethods {
                     originParent: parent,
                     originMethod: originMethod as AnyFunctionType,
                     methodName,
-                    option: [hookOption]
+                    option: [hookOption],
+                    originDescriptor
                 }
                 this.setHookItem("method", parent, methodName, hookItem);
                 return true;
@@ -247,11 +248,11 @@ export class Hooker extends StaticMethods {
         const currentHookItem = this.getHookItem("accessor", parent, target);
         if (currentHookItem) {
             //判断id是否重复
-            if (hookOption.id && this.originObjectReference.Reflect.apply(this.originObjectReference.Array.some,currentHookItem.option, [item => item.id === hookOption.id])) {
+            if (hookOption.id && this.originObjectReference.Reflect.apply(this.originObjectReference.Array.some, currentHookItem.option, [item => item.id === hookOption.id])) {
                 this.originObjectReference.console.warn(`already has accessor hook id:${hookOption.id}`);
                 return false
             }
-            this.originObjectReference.Reflect.apply(this.originObjectReference.Array.push,currentHookItem.option, [hookOption]);
+            this.originObjectReference.Reflect.apply(this.originObjectReference.Array.push, currentHookItem.option, [hookOption]);
             return true
         }
         const originDescriptor = this.originObjectReference.Reflect.getOwnPropertyDescriptor(parent, target);
@@ -271,10 +272,10 @@ export class Hooker extends StaticMethods {
         }
         const tempHookEntry: { getter: (() => any) | undefined, setter: ((value: any) => void) | undefined } = { getter: originGetter, setter: originSetter }
         if (originGetter) {
-            this.originObjectReference.Reflect.defineProperty(originGetter, 'toString', {
+            if (this.enableBypassDefault||hookOption.enableBypass) this.originObjectReference.Reflect.defineProperty(originGetter, 'toString', {
                 value: createBypassToStringMethod(this.originObjectReference, target, "get"),
                 writable: false,
-                enumerable: true,
+                enumerable: false,
                 configurable: true,
             });
             tempHookEntry.getter = new this.originObjectReference.Proxy(originGetter, {
@@ -329,10 +330,10 @@ export class Hooker extends StaticMethods {
             });
         }
         if (originSetter) {
-            this.originObjectReference.Reflect.defineProperty(originSetter, 'toString', {
+            if (this.enableBypassDefault||hookOption.enableBypass) this.originObjectReference.Reflect.defineProperty(originSetter, 'toString', {
                 value: createBypassToStringMethod(this.originObjectReference, target, "set"),
                 writable: false,
-                enumerable: true,
+                enumerable: false,
                 configurable: true,
             });
             tempHookEntry.setter = new this.originObjectReference.Proxy(originSetter, {
@@ -390,7 +391,8 @@ export class Hooker extends StaticMethods {
             const hookItem: AccessorHookMapItem = {
                 originGetter: originGetter ?? null,
                 originSetter: originSetter ?? null,
-                option: [hookOption]
+                option: [hookOption],
+                originDescriptor
             }
             this.setHookItem("accessor", parent, target, hookItem);
             return true;
@@ -420,7 +422,7 @@ export class Hooker extends StaticMethods {
                 this.originObjectReference.Reflect.apply(this.originObjectReference.Array.push, currentHookItem.option, [hookOption]);
                 return true;
             }
-            this.originObjectReference.Reflect.defineProperty(originObject, "toString", {
+            if (this.enableBypassDefault||hookOption.enableBypass) this.originObjectReference.Reflect.defineProperty(originObject, "toString", {
                 value: createBypassToStringMethod(this.originObjectReference, objectName),
                 writable: false,
                 enumerable: false,
@@ -559,7 +561,8 @@ export class Hooker extends StaticMethods {
                     originParent: parent,
                     originObject: originObject as AnyConstructorType,
                     objectName,
-                    option: [hookOption]
+                    option: [hookOption],
+                    originDescriptor
                 }
                 this.setHookItem("object", parent, objectName, hookItem);
                 return true;
@@ -570,7 +573,7 @@ export class Hooker extends StaticMethods {
             return false;
         }
     }
-    unhook(type: HookType, parent: object, name: string, id: string) {
+    unhook(type: HookType, parent: object, name: string, id: string, autoRestore = false) {
         const targetMap = (() => {
             switch (type) {
                 case "method":
@@ -584,17 +587,77 @@ export class Hooker extends StaticMethods {
             }
         })();
         if (!targetMap) return;
-        const parentHookList = this.originObjectReference.Reflect.apply(this.originObjectReference.WeakMap.get,targetMap,[parent])
+        const parentHookList = this.originObjectReference.Reflect.apply(this.originObjectReference.WeakMap.get, targetMap, [parent])
         if (!parentHookList) return;
-        const childHookList = this.originObjectReference.Reflect.apply(this.originObjectReference.Map.get,parentHookList,[name]);
+        const childHookList = this.originObjectReference.Reflect.apply(this.originObjectReference.Map.get, parentHookList, [name]);
         if (!childHookList) return;
         for (let i = childHookList.option.length - 1; i >= 0; i--) {
             if (childHookList.option[i]?.id === id) {
-                this.originObjectReference.Reflect.apply(this.originObjectReference.Array.splice,childHookList.option,[i,1])
+                this.originObjectReference.Reflect.apply(this.originObjectReference.Array.splice, childHookList.option, [i, 1])
                 break
             }
         }
-        if (childHookList.option.length === 0) this.originObjectReference.Reflect.apply(this.originObjectReference.Map.delete,parentHookList,[name])
+        if (childHookList.option.length === 0) {
+            if (autoRestore && this.restoreHook(type, parent, name)) {
+                this.originObjectReference.Reflect.apply(this.originObjectReference.Map.delete, parentHookList, [name])
+            }
+        }
+    }
+    restoreHook(type: HookType, parent: object, targetName: string): boolean {
+        const targetMap = (() => {
+            switch (type) {
+                case "method":
+                    return this.hookedMethodMap
+                case "accessor":
+                    return this.hookedAccessorMap
+                case "object":
+                    return this.hookedObjectMap
+                default:
+                    return null
+            }
+        })();
+        if (!targetMap) return false
+        const parentHookList: Map<string, any> = this.originObjectReference.Reflect.apply(this.originObjectReference.WeakMap.get, targetMap, [parent])
+        if (!parentHookList || parentHookList.size === 0) return false
+        const option = this.originObjectReference.Reflect.apply(this.originObjectReference.Map.get, parentHookList, [targetName])
+        if (!option) return false;
+        let successful = false;
+        switch (type) {
+            case "accessor":
+                const typedOptionAccessor = option as AccessorHookMapItem;
+                successful = this.originObjectReference.Reflect.defineProperty(parent, targetName, {
+                    get: option.originGetter,
+                    set: option.originSetter,
+                    configurable: typedOptionAccessor.originDescriptor.configurable,
+                    enumerable: typedOptionAccessor.originDescriptor.enumerable
+                });
+                break;
+            case "method":
+                const typedOptionMethod = option as MethodHookMapItem;
+                successful = this.originObjectReference.Reflect.defineProperty(parent, targetName, {
+                    value: option.originMethod,
+                    configurable: typedOptionMethod.originDescriptor.configurable,
+                    enumerable: typedOptionMethod.originDescriptor.enumerable,
+                    writable: typedOptionMethod.originDescriptor.writable
+                });
+                break
+            case "object":
+                const typedOptionObject = option as ObjectHookMapItem
+                successful = this.originObjectReference.Reflect.defineProperty(parent, targetName, {
+                    value: option.originObject,
+                    writable: typedOptionObject.originDescriptor.writable,
+                    configurable: typedOptionObject.originDescriptor.configurable,
+                    enumerable: typedOptionObject.originDescriptor.enumerable
+                });
+                break
+            default:
+                break;
+        }
+        if (!successful) {
+            return false
+        }
+        this.originObjectReference.Reflect.apply(this.originObjectReference.Map.delete, parentHookList, [targetName]);
+        return true
     }
     private getOriginExecutable(target: Function | object) {
         return this.originObjectReference.Reflect.get(target, this.HOOKED_TAG_SYMBOL) ?? null;
@@ -618,8 +681,8 @@ export class Hooker extends StaticMethods {
                     throw new this.originObjectReference.TypeError(`Invalid hook type: ${type}`);
             }
         })();
-        const rootMapResult = this.originObjectReference.Reflect.apply(this.originObjectReference.WeakMap.get,rootMap,[parent])
-        return rootMapResult ? this.originObjectReference.Reflect.apply(this.originObjectReference.Map.get,rootMapResult,[name]) ?? null : null
+        const rootMapResult = this.originObjectReference.Reflect.apply(this.originObjectReference.WeakMap.get, rootMap, [parent])
+        return rootMapResult ? this.originObjectReference.Reflect.apply(this.originObjectReference.Map.get, rootMapResult, [name]) ?? null : null
     }
     private setHookItem(type: "method", parent: object, name: string, item: MethodHookMapItem): void
     private setHookItem(type: "object", parent: object, name: string, item: ObjectHookMapItem): void
@@ -637,12 +700,12 @@ export class Hooker extends StaticMethods {
                     throw new this.originObjectReference.TypeError(`Invalid hook type: ${type}`);
             }
         })();
-        let parentMap = this.originObjectReference.Reflect.apply(this.originObjectReference.WeakMap.get,rootMap,[parent])
+        let parentMap = this.originObjectReference.Reflect.apply(this.originObjectReference.WeakMap.get, rootMap, [parent])
         if (!parentMap) {
             parentMap = new this.originObjectReference.MapObject();
-            this.originObjectReference.Reflect.apply(this.originObjectReference.WeakMap.set,rootMap,[parent,parentMap as any])
+            this.originObjectReference.Reflect.apply(this.originObjectReference.WeakMap.set, rootMap, [parent, parentMap as any])
         }
-        this.originObjectReference.Reflect.apply(this.originObjectReference.Map.set,parentMap,[name,item])
+        this.originObjectReference.Reflect.apply(this.originObjectReference.Map.set, parentMap, [name, item])
 
     }
     isHooked(method: any) {

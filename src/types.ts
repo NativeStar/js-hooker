@@ -16,6 +16,7 @@ export interface HookerConstruct {
     internalTagSymbol?: symbol
 }
 export interface MethodHookOption<F extends AnyFunctionType, R = ReturnType<F>> {
+    enableBypass?: boolean
     descriptor?: Omit<PropertyDescriptor, "set" | "get" | "value">;
     /**
      * 唯一标识 用于unhook
@@ -36,6 +37,7 @@ export interface MethodHookOption<F extends AnyFunctionType, R = ReturnType<F>> 
     afterMethodInvoke?: (args: Parameters<F>, tempMethodResult: TempHookResultWrapper<R>, thisArg: ThisParameterType<F>,originMethod:F) => void;
 }
 export interface AccessorHookOption<P extends object, K extends keyof P> {
+    enableBypass?: boolean
     id?: string;
     descriptor?: Omit<PropertyDescriptor, "set" | "get" | "value" | "writable">;
     beforeGetterInvoke?: (abortController: AbortController, thisArg: P, tempMethodResult: TempHookResultWrapper<P[K]>) => void;
@@ -46,15 +48,18 @@ export interface MethodHookMapItem {
     originMethod: AnyFunctionType;
     originParent: object;
     methodName: string
+    originDescriptor:TypedPropertyDescriptor<any>
     option: MethodHookOption<AnyFunctionType>[];
 }
 export interface AccessorHookMapItem<T = any> {
     originGetter: (() => T) | null;
     originSetter: ((value: T) => void) | null;
+    originDescriptor:TypedPropertyDescriptor<any>
     option: AccessorHookOption<any, any>[];
 }
 export interface ObjectHookOption<C extends AnyConstructorType = AnyConstructorType> {
     id?: string
+    enableBypass?: boolean
     descriptor?: Omit<PropertyDescriptor, "set" | "get" | "value">;
     afterGet?: (prop: string | symbol, tempResult: TempHookResultWrapper<any>) => void
     afterHas?: (prop: string | symbol, tempResult: TempHookResultWrapper<boolean>) => void
@@ -69,4 +74,5 @@ export interface ObjectHookMapItem<C extends AnyConstructorType=AnyConstructorTy
     originParent: object;
     objectName: string
     option: ObjectHookOption<C>[];
+    originDescriptor:TypedPropertyDescriptor<any>
 }
