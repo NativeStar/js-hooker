@@ -33,9 +33,6 @@ export const OriginObjects={
         warn:console.warn,
         error:console.error
     },
-    Error:{
-        captureStackTrace:Error.captureStackTrace
-    },
     MapObject:Map,
     Map:{
         get:Map.prototype.get,

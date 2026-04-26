@@ -9,8 +9,9 @@ export class Hooker extends StaticMethods {
     private readonly HOOKED_SYMBOL = Symbol();
     private readonly GET_ORIGIN_METHOD_SYMBOL = Symbol();
     private originObjectReference = OriginObjects;
-    constructor(option: HookerConstruct) {
+    constructor(option?: HookerConstruct) {
         super(option);
+        if(!option) return;
         if (option.originReference) this.originObjectReference = option.originReference;
     }
     setOriginObjectSource(source: typeof OriginObjects) {
