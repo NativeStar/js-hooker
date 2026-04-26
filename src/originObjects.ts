@@ -33,21 +33,8 @@ export const OriginObjects={
         warn:console.warn,
         error:console.error
     },
-    document:{
-        createElement:document.createElement.bind(document),
-    },
-    open,
-    navigator:{
-        clipboard:{
-            writeText:navigator.clipboard?navigator.clipboard.writeText.bind(navigator.clipboard):null,
-            write:navigator.clipboard?navigator.clipboard.write.bind(navigator.clipboard):null,
-        }
-    },
     Error:{
         captureStackTrace:Error.captureStackTrace
-    },
-    JSON:{
-        stringify:JSON.stringify
     },
     MapObject:Map,
     Map:{

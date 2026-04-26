@@ -1,4 +1,4 @@
-import type { OriginObjects } from "./originObjects";
+import type { OriginObjects } from "./originObjects.js";
 
 export type HookType="method"|"accessor"|"object"
 export type AnyFunctionType = (...args: any[]) => any;

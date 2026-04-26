@@ -1,4 +1,4 @@
-import { OriginObjects } from "./originObjects";
+import { OriginObjects } from "./originObjects.js";
 
 export class StaticMethods{
     constructor(_option:any){}

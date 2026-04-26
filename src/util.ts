@@ -1,4 +1,4 @@
-import {type OriginObjects } from "./originObjects";
+import {type OriginObjects } from "./originObjects.js";
 const leakedStackFeature = [
     "at Object.apply (<anonymous>:",
     "hookEntry (<anonymous>:",

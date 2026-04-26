@@ -1,7 +1,7 @@
-import { OriginObjects } from "./originObjects";
-import { createBypassToStringMethod, filterErrorStack } from "./util";
-import type { AnyFunctionType, MethodByName, TempHookResultWrapper, MethodHookOption, AccessorHookOption, AccessorHookMapItem, MethodHookMapItem, ObjectHookOption, ObjectHookMapItem, ConstructorPropertyName, AnyConstructorType, HookType, HookerConstruct } from "./types"
-import { StaticMethods } from "./StaticMethods";
+import { OriginObjects } from "./originObjects.js";
+import { createBypassToStringMethod, filterErrorStack } from "./util.js";
+import type { AnyFunctionType, MethodByName, TempHookResultWrapper, MethodHookOption, AccessorHookOption, AccessorHookMapItem, MethodHookMapItem, ObjectHookOption, ObjectHookMapItem, ConstructorPropertyName, AnyConstructorType, HookType, HookerConstruct } from "./types.js"
+import { StaticMethods } from "./staticMethods.js";
 export class Hooker extends StaticMethods {
     private readonly hookedMethodMap: WeakMap<object, Map<string, MethodHookMapItem>> = new WeakMap();
     private readonly hookedAccessorMap: WeakMap<object, Map<string, AccessorHookMapItem>> = new WeakMap();

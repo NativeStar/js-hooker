@@ -1,2 +1,2 @@
-import {Hooker} from "./src/hooker"
+import {Hooker} from "./src/hooker.js"
 export {Hooker};

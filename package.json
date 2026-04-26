@@ -1,12 +1,28 @@
 {
   "name": "js-hooker",
+  "private": false,
   "version": "1.0.0",
   "description": "placeholder",
   "license": "ISC",
   "author": "NativeStar",
   "type": "module",
-  "main": "index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build:js": "esbuild index.ts --bundle --format=esm --platform=browser --target=es2022 --outfile=dist/index.js",
+    "build:types": "tsc -p tsconfig.build.json",
+    "build": "npm run build:js && npm run build:types"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.0"
   }
 }
