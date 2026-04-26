@@ -13,6 +13,7 @@ export type ConstructorPropertyName<P extends object> = Extract<{
 export interface HookerConstruct {
     originReference?: typeof OriginObjects
     enableBypassDefault?: boolean
+    internalTagSymbol?: symbol
 }
 export interface MethodHookOption<F extends AnyFunctionType, R = ReturnType<F>> {
     descriptor?: Omit<PropertyDescriptor, "set" | "get" | "value">;

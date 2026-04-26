@@ -6,16 +6,15 @@ export class Hooker extends StaticMethods {
     private readonly hookedMethodMap: WeakMap<object, Map<string, MethodHookMapItem>> = new WeakMap();
     private readonly hookedAccessorMap: WeakMap<object, Map<string, AccessorHookMapItem>> = new WeakMap();
     private readonly hookedObjectMap: WeakMap<object, Map<string, ObjectHookMapItem>> = new WeakMap();
-    private readonly HOOKED_SYMBOL = Symbol();
-    private readonly GET_ORIGIN_METHOD_SYMBOL = Symbol();
-    private originObjectReference = OriginObjects;
+    private readonly HOOKED_TAG_SYMBOL:symbol
+    //TODO
+    private readonly enableBypassDefault:boolean;
+    private readonly originObjectReference:typeof OriginObjects;
     constructor(option?: HookerConstruct) {
         super(option);
-        if(!option) return;
-        if (option.originReference) this.originObjectReference = option.originReference;
-    }
-    setOriginObjectSource(source: typeof OriginObjects) {
-        this.originObjectReference = source;
+        this.originObjectReference = option?.originReference??OriginObjects;
+        this.enableBypassDefault = option?.enableBypassDefault ?? true;
+        this.HOOKED_TAG_SYMBOL = option?.internalTagSymbol ?? Symbol();
     }
     hookMethod<P extends object, K extends keyof P, F extends Extract<P[K], AnyFunctionType>, T = ReturnType<F>>(parent: P, target: K, hookOption: MethodHookOption<F>): boolean;
     hookMethod<P extends object, K extends string, F extends MethodByName<P, K> = MethodByName<P, K>>(parent: P, target: K, hookOption: MethodHookOption<F>): boolean;
@@ -86,13 +85,13 @@ export class Hooker extends StaticMethods {
                     return tempResult.current;
                 },
                 has: (target, p) => {
-                    if (p === this.HOOKED_SYMBOL) {
+                    if (p === this.HOOKED_TAG_SYMBOL) {
                         return true;
                     }
                     return this.originObjectReference.Reflect.has(target, p);
                 },
                 get: (target, p) => {
-                    if (p === this.GET_ORIGIN_METHOD_SYMBOL) {
+                    if (p === this.HOOKED_TAG_SYMBOL) {
                         return originMethod;
                     }
                     return this.originObjectReference.Reflect.get(target, p);
@@ -203,13 +202,13 @@ export class Hooker extends StaticMethods {
                     })
                 },
                 has: (target, p) => {
-                    if (p === this.HOOKED_SYMBOL) {
+                    if (p === this.HOOKED_TAG_SYMBOL) {
                         return true;
                     }
                     return this.originObjectReference.Reflect.has(target, p);
                 },
                 get: (target, p) => {
-                    if (p === this.GET_ORIGIN_METHOD_SYMBOL) {
+                    if (p === this.HOOKED_TAG_SYMBOL) {
                         return originMethod;
                     }
                     return this.originObjectReference.Reflect.get(target, p);
@@ -316,13 +315,13 @@ export class Hooker extends StaticMethods {
                     return tempResult.current;
                 },
                 has: (target, p) => {
-                    if (p === this.HOOKED_SYMBOL) {
+                    if (p === this.HOOKED_TAG_SYMBOL) {
                         return true;
                     }
                     return this.originObjectReference.Reflect.has(target, p);
                 },
                 get: (target, p) => {
-                    if (p === this.GET_ORIGIN_METHOD_SYMBOL) {
+                    if (p === this.HOOKED_TAG_SYMBOL) {
                         return originGetter;
                     }
                     return this.originObjectReference.Reflect.get(target, p);
@@ -368,13 +367,13 @@ export class Hooker extends StaticMethods {
                     return
                 },
                 has: (target, p) => {
-                    if (p === this.HOOKED_SYMBOL) {
+                    if (p === this.HOOKED_TAG_SYMBOL) {
                         return true;
                     }
                     return this.originObjectReference.Reflect.has(target, p);
                 },
                 get: (target, p) => {
-                    if (p === this.GET_ORIGIN_METHOD_SYMBOL) {
+                    if (p === this.HOOKED_TAG_SYMBOL) {
                         return originSetter;
                     }
                     return this.originObjectReference.Reflect.get(target, p);
@@ -429,7 +428,7 @@ export class Hooker extends StaticMethods {
             });
             const hookProxy = new this.originObjectReference.Proxy(originObject, {
                 get: (target, p, receiver) => {
-                    if (p === this.GET_ORIGIN_METHOD_SYMBOL) {
+                    if (p === this.HOOKED_TAG_SYMBOL) {
                         return originObject;
                     }
                     const hookItems = this.getHookItem("object", parent, objectName);
@@ -444,7 +443,7 @@ export class Hooker extends StaticMethods {
                     return tempResult.current;
                 },
                 has: (target, p) => {
-                    if (p === this.HOOKED_SYMBOL) {
+                    if (p === this.HOOKED_TAG_SYMBOL) {
                         return true;
                     }
                     const hookItems = this.getHookItem("object", parent, objectName);
@@ -598,10 +597,10 @@ export class Hooker extends StaticMethods {
         if (childHookList.option.length === 0) this.originObjectReference.Reflect.apply(this.originObjectReference.Map.delete,parentHookList,[name])
     }
     private getOriginExecutable(target: Function | object) {
-        return this.originObjectReference.Reflect.get(target, this.GET_ORIGIN_METHOD_SYMBOL) ?? null;
+        return this.originObjectReference.Reflect.get(target, this.HOOKED_TAG_SYMBOL) ?? null;
     }
     public ensureOriginExecutable<T>(target: Function | object): T {
-        return this.originObjectReference.Reflect.get(target, this.GET_ORIGIN_METHOD_SYMBOL) ?? target;
+        return this.originObjectReference.Reflect.get(target, this.HOOKED_TAG_SYMBOL) ?? target;
     }
     private getHookItem(type: "method", parent: object, name: string): MethodHookMapItem | null
     private getHookItem(type: "object", parent: object, name: string): ObjectHookMapItem | null
@@ -648,6 +647,6 @@ export class Hooker extends StaticMethods {
     }
     isHooked(method: any) {
         if (!method) return false;
-        return this.originObjectReference.Reflect.has(method, this.HOOKED_SYMBOL);
+        return this.originObjectReference.Reflect.has(method, this.HOOKED_TAG_SYMBOL);
     }
 }
