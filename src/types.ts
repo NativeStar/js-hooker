@@ -38,7 +38,7 @@ export interface MethodHookOption<F extends AnyFunctionType, R = ReturnType<F>> 
      */
     descriptor?: Omit<PropertyDescriptor, "set" | "get" | "value">;
     /**
-     * 唯一标识 用于执行unhook 如无需unhook可忽略
+     * 唯一标识 如无需unhook或检查hook状态可忽略
      */
     id?: string
     /**在方法执行前触发
@@ -65,7 +65,7 @@ export interface AccessorHookOption<P extends object, K extends keyof P> {
      */
     enableBypass?: boolean
     /**
-     * 唯一标识 用于执行unhook 如无需unhook可忽略
+     * 唯一标识 如无需unhook或检查hook状态可忽略
      */
     id?: string;
     /**
@@ -108,7 +108,7 @@ export interface AccessorHookMapItem<T = any> {
 }
 export interface ObjectHookOption<C extends AnyConstructorType = AnyConstructorType> {
     /**
-     * 唯一标识 用于执行unhook 如无需unhook可忽略
+     * 唯一标识 如无需unhook或检查hook状态可忽略
      */
     id?: string
     /**

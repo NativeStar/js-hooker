@@ -18,7 +18,7 @@ export class Hooker extends StaticMethods {
     /**
      * 对指定的同步方法执行hook
      * @param parent 目标方法所在的的父对象
-     * @param target 目标方法名
+     * @param methodName 目标方法名
      * @param hookOption 执行hook的设置
      * @returns 是否成功
      * @example
@@ -614,7 +614,7 @@ export class Hooker extends StaticMethods {
      * @param parent 准备取消hook属性的父对象
      * @param name 准备取消hook属性的名称
      * @param id 准备取消的hook id
-     * @param autoRestore 当目标方法已无hook时是否自动还原原始属性
+     * @param autoRestore 当目标方法已无挂载hook时是否自动还原原始属性
      * @example 
      * hooker.unhook("method",window,"alert","alert.cancelExecute",true)
      */
