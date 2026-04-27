@@ -15,6 +15,15 @@ export class Hooker extends StaticMethods {
         this.enableBypassDefault = option?.enableBypassDefault ?? true;
         this.HOOKED_TAG_SYMBOL = option?.internalTagSymbol ?? Symbol();
     }
+    /**
+     * 对指定的同步方法执行hook
+     * @param parent 目标方法所在的的父对象
+     * @param target 目标方法名
+     * @param hookOption 执行hook的设置
+     * @returns 是否成功
+     * @example
+     * hooker.hookMethod(window, "alert", {})
+     */
     hookMethod<P extends object, K extends keyof P, F extends Extract<P[K], AnyFunctionType>, T = ReturnType<F>>(parent: P, target: K, hookOption: MethodHookOption<F>): boolean;
     hookMethod<P extends object, K extends string, F extends MethodByName<P, K> = MethodByName<P, K>>(parent: P, target: K, hookOption: MethodHookOption<F>): boolean;
     hookMethod(parent: any, methodName: string, hookOption: MethodHookOption<AnyFunctionType>): boolean {
@@ -40,7 +49,7 @@ export class Hooker extends StaticMethods {
                 return true
             }
             // 屏蔽枚举和重写
-            if (this.enableBypassDefault||hookOption.enableBypass) this.originObjectReference.Reflect.defineProperty(originMethod, 'toString', {
+            if (hookOption.enableBypass ?? this.enableBypassDefault) this.originObjectReference.Reflect.defineProperty(originMethod, 'toString', {
                 value: createBypassToStringMethod(this.originObjectReference, methodName),
                 writable: false,
                 enumerable: false,
@@ -125,7 +134,15 @@ export class Hooker extends StaticMethods {
             return false;
         }
     }
-
+    /**
+     * 对指定的异步方法执行hook
+     * @param parent 目标方法所在的的父对象
+     * @param target 目标方法名
+     * @param hookOption 执行hook的设置
+     * @returns 是否成功
+     * @example
+     * hooker.hookAsyncMethod(window, "fetch", {})
+     */
     hookAsyncMethod<P extends object, K extends keyof P, F extends Extract<P[K], AnyFunctionType>, T = Awaited<ReturnType<F>>>(parent: P, target: K, hookOption: MethodHookOption<F, Awaited<ReturnType<F>>>): boolean;
     hookAsyncMethod<P extends object, K extends string, F extends MethodByName<P, K> = MethodByName<P, K>>(parent: P, target: K, hookOption: MethodHookOption<F, Awaited<ReturnType<F>>>): boolean;
     hookAsyncMethod(parent: Record<string, any>, methodName: string, hookOption: MethodHookOption<AnyFunctionType>): boolean {
@@ -150,7 +167,7 @@ export class Hooker extends StaticMethods {
                 return true
             }
             try {
-                if (this.enableBypassDefault||hookOption.enableBypass) this.originObjectReference.Reflect.defineProperty(originMethod, 'toString', {
+                if (hookOption.enableBypass ?? this.enableBypassDefault) this.originObjectReference.Reflect.defineProperty(originMethod, 'toString', {
                     value: createBypassToStringMethod(this.originObjectReference, methodName),
                     writable: false,
                     enumerable: false,
@@ -242,6 +259,15 @@ export class Hooker extends StaticMethods {
             return false;
         }
     }
+    /**
+     * 对指定的访问器执行hook
+     * @param parent 目标访问器所在的的父对象
+     * @param target 目标访问器名
+     * @param hookOption 执行hook的设置
+     * @returns 是否成功
+     * @example
+     * hooker.hookAccessor(HTMLScriptElement.prototype, "src", {})
+     */
     hookAccessor<P extends object, K extends keyof P>(parent: P, target: K, hookOption: AccessorHookOption<P, K>): boolean;
     hookAccessor(parent: any, target: string, hookOption: AccessorHookOption<any, any>) {
         if (!parent) return false
@@ -272,7 +298,7 @@ export class Hooker extends StaticMethods {
         }
         const tempHookEntry: { getter: (() => any) | undefined, setter: ((value: any) => void) | undefined } = { getter: originGetter, setter: originSetter }
         if (originGetter) {
-            if (this.enableBypassDefault||hookOption.enableBypass) this.originObjectReference.Reflect.defineProperty(originGetter, 'toString', {
+            if (hookOption.enableBypass ?? this.enableBypassDefault) this.originObjectReference.Reflect.defineProperty(originGetter, 'toString', {
                 value: createBypassToStringMethod(this.originObjectReference, target, "get"),
                 writable: false,
                 enumerable: false,
@@ -330,7 +356,7 @@ export class Hooker extends StaticMethods {
             });
         }
         if (originSetter) {
-            if (this.enableBypassDefault||hookOption.enableBypass) this.originObjectReference.Reflect.defineProperty(originSetter, 'toString', {
+            if (hookOption.enableBypass ?? this.enableBypassDefault) this.originObjectReference.Reflect.defineProperty(originSetter, 'toString', {
                 value: createBypassToStringMethod(this.originObjectReference, target, "set"),
                 writable: false,
                 enumerable: false,
@@ -399,6 +425,15 @@ export class Hooker extends StaticMethods {
         }
         return false;
     }
+    /**
+     * 对指定的可实例化对象执行hook
+     * @param parent 目标对象所在的的父对象
+     * @param target 目标对象名
+     * @param hookOption 执行hook的设置
+     * @returns 是否成功
+     * @example
+     * hooker.hookObject(window, "Function", {})
+     */
     hookObject<P extends object, K extends ConstructorPropertyName<P>>(parent: P, target: K, hookOption: ObjectHookOption<Extract<P[K], AnyConstructorType>>): boolean;
     hookObject<T extends AnyConstructorType>(parent: object, target: string, hookOption: ObjectHookOption<T>): boolean
     hookObject(parent: any, objectName: string, hookOption: ObjectHookOption<AnyConstructorType>): boolean {
@@ -422,7 +457,7 @@ export class Hooker extends StaticMethods {
                 this.originObjectReference.Reflect.apply(this.originObjectReference.Array.push, currentHookItem.option, [hookOption]);
                 return true;
             }
-            if (this.enableBypassDefault||hookOption.enableBypass) this.originObjectReference.Reflect.defineProperty(originObject, "toString", {
+            if (hookOption.enableBypass ?? this.enableBypassDefault) this.originObjectReference.Reflect.defineProperty(originObject, "toString", {
                 value: createBypassToStringMethod(this.originObjectReference, objectName),
                 writable: false,
                 enumerable: false,
@@ -573,6 +608,16 @@ export class Hooker extends StaticMethods {
             return false;
         }
     }
+    /**
+     * 取消指定id的hook
+     * @param type 被hook属性的类型
+     * @param parent 准备取消hook属性的父对象
+     * @param name 准备取消hook属性的名称
+     * @param id 准备取消的hook id
+     * @param autoRestore 当目标方法已无hook时是否自动还原原始属性
+     * @example 
+     * hooker.unhook("method",window,"alert","alert.cancelExecute",true)
+     */
     unhook(type: HookType, parent: object, name: string, id: string, autoRestore = false) {
         const targetMap = (() => {
             switch (type) {
@@ -603,6 +648,15 @@ export class Hooker extends StaticMethods {
             }
         }
     }
+    /**
+     * 还原指定方法为原始方法并移除所有hook
+     * @param type 被hook属性的类型
+     * @param parent 准备还原的属性的父对象
+     * @param name 准备还原的属性的名称
+     * @returns 是否还原成功
+     * @example
+     * hooker.restoreHook("method",window,"alert")
+     */
     restoreHook(type: HookType, parent: object, targetName: string): boolean {
         const targetMap = (() => {
             switch (type) {
@@ -662,7 +716,14 @@ export class Hooker extends StaticMethods {
     private getOriginExecutable(target: Function | object) {
         return this.originObjectReference.Reflect.get(target, this.HOOKED_TAG_SYMBOL) ?? null;
     }
-    public ensureOriginExecutable<T>(target: Function | object): T {
+    /**
+     * 传入被hook的对象并返回其原始对象 如果传入对象未被hook则将其原路返回
+     * @param target 目标对象
+     * @returns 原始对象
+     * @example
+     * hooker.ensureOriginExecutable(window.alert)
+     */
+    ensureOriginExecutable<T>(target: Function | object): T {
         return this.originObjectReference.Reflect.get(target, this.HOOKED_TAG_SYMBOL) ?? target;
     }
     private getHookItem(type: "method", parent: object, name: string): MethodHookMapItem | null
@@ -708,8 +769,18 @@ export class Hooker extends StaticMethods {
         this.originObjectReference.Reflect.apply(this.originObjectReference.Map.set, parentMap, [name, item])
 
     }
-    isHooked(method: any) {
-        if (!method) return false;
-        return this.originObjectReference.Reflect.has(method, this.HOOKED_TAG_SYMBOL);
+    /**
+     * 判断传入的对象是否已经过hook
+     * @param target 目标对象
+     * @returns 是否已被hook
+     * @example
+     * hooker.isHooked(window.fetch)
+     */
+    isHooked(target: any) {
+        if (!target) return false;
+        return this.originObjectReference.Reflect.has(target, this.HOOKED_TAG_SYMBOL);
+    }
+    isHookedById(type:HookType,parent: object, target:any, id: string){
+
     }
 }
