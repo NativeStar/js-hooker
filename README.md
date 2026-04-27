@@ -1,5 +1,5 @@
 # js-hooker
-一个轻量、简单的 适用于浏览器环境的JavaScript Hook库
+一个轻量、简洁的 适用于浏览器环境的JavaScript Hook库
 
 [Github](https://github.com/NativeStar/js-hooker)
 
