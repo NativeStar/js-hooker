@@ -12,7 +12,9 @@ export type ConstructorPropertyName<P extends object> = Extract<{
 }[keyof P], string>;
 export interface HookerConstruct {
     /**
-     * 设置原始引用 如果同时存在多个hooker实例则建议设置避免可能的死循环
+     * 设置原始引用 如果同时存在多个hooker实例则建议设置该属性避免可能的死循环
+     * 
+     * 属性值可通过调用静态方法Hooker.getOriginReference获取
      */
     originReference?: typeof OriginObjects
     /**
@@ -20,7 +22,7 @@ export interface HookerConstruct {
      */
     enableBypassDefault?: boolean
     /**
-     * 内部hook标记用symbol 如果同时存在多个hooker实例则建议均使用一个symbol避免可能的异常
+     * 设置hook标记用内部symbol 如果同时存在多个hooker实例则建议均使用一个symbol减少可能的异常
      */
     internalTagSymbol?: symbol
 }
@@ -67,7 +69,7 @@ export interface AccessorHookOption<P extends object, K extends keyof P> {
      */
     id?: string;
     /**
-     * 设置hook代理时使用的描述符 仅在对方法首次hook时生效
+     * 设置hook代理时使用的描述符 仅在对访问器首次hook时生效
      */
     descriptor?: Omit<PropertyDescriptor, "set" | "get" | "value" | "writable">;
     /**
@@ -116,7 +118,7 @@ export interface ObjectHookOption<C extends AnyConstructorType = AnyConstructorT
      */
     enableBypass?: boolean
     /**
-     * 设置hook代理时使用的描述符 仅在对方法首次hook时生效
+     * 设置hook代理时使用的描述符 仅在对该对象首次hook时生效
      */
     descriptor?: Omit<PropertyDescriptor, "set" | "get" | "value">;
     /**
