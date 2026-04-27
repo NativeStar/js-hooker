@@ -780,7 +780,38 @@ export class Hooker extends StaticMethods {
         if (!target) return false;
         return this.originObjectReference.Reflect.has(target, this.HOOKED_TAG_SYMBOL);
     }
-    isHookedById(type:HookType,parent: object, target:any, id: string){
-
+    /**
+     * 检查指定id的hook是否已挂载到指定属性上
+     * @param type 被hook属性的类型
+     * @param parent 准备检查hook属性的父对象
+     * @param target 准备检查hook属性的名称
+     * @param id 目标hook id
+     * @example 
+     * hooker.isHookedById("method",window,"alert","alert.cancelExecute")
+     */
+    isHookedById(type: HookType, parent: object, target: any, id: string): boolean {
+        const targetMap = (() => {
+            switch (type) {
+                case "method":
+                    return this.hookedMethodMap
+                case "accessor":
+                    return this.hookedAccessorMap
+                case "object":
+                    return this.hookedObjectMap
+                default:
+                    return null
+            }
+        })();
+        if (!targetMap) return false;
+        const parentHookList = this.originObjectReference.Reflect.apply(this.originObjectReference.WeakMap.get, targetMap, [parent])
+        if (!parentHookList) return false;
+        const childHookList = this.originObjectReference.Reflect.apply(this.originObjectReference.Map.get, parentHookList, [target]);
+        if (!childHookList) return false;
+        for (let i = childHookList.option.length - 1; i >= 0; i--) {
+            if (childHookList.option[i]?.id === id) {
+                return true
+            }
+        }
+        return false
     }
 }
