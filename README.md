@@ -1,10 +1,13 @@
 # js-hooker
-适用于浏览器环境的JavaScript Hook库
+一个轻量、简单的 适用于浏览器环境的JavaScript Hook库
 
+[Github](https://github.com/NativeStar/js-hooker)
+
+[NPM](https://www.npmjs.com/package/js-hooker)
 ### 简介
 支持对函数、访问器、构造函数进行hook 并实现阻止执行、修改执行参数、修改返回值等功能
 
-适用于网页脚本(如TamperMonkey)开发 需要对函数功能进行修改的情况
+适用于网页脚本(如TamperMonkey脚本 浏览器扩展ContentScript)开发 需要对函数功能进行修改的情况
 
 使用方法可参考项目https://github.com/NativeStar/Kyouka
 
@@ -66,3 +69,4 @@ hooker2.hookMethod(window,"alert",{});
 - 作为用户脚本或浏览器扩展使用时建议尽早注入(document-start阶段)并创建实例 避免页面保存方法引用导致hook失效或页面修改了原生方法导致异常
 - 该项目仅对Hook原生方法(alert open等)的行为进行测试 不保证在hook正常创建的方法时完全正常工作
 - 如果需要hook非原生方法 建议对该方法关闭hook隐藏(hookOption对象内传入enableBypass:false)
+- 由于eval函数的特殊性质 请谨慎对eval函数进行hook 否则某些网站会出现异常(拦截执行除外)
