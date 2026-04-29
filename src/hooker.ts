@@ -102,7 +102,13 @@ export class Hooker extends StaticMethods {
                     if (p === this.HOOKED_TAG_SYMBOL) {
                         return originMethod;
                     }
-                    return this.originObjectReference.Reflect.get(target, p);
+                    const result=this.originObjectReference.Reflect.get(target, p);
+                    //TODO 之后再测试
+                    // if (p==="toString"&&result===this.originObjectReference.Function.toString) {
+                    //     console.log("test call str!");
+                    //     return OriginObjects.Reflect.apply(this.originObjectReference.Function.bind, this.originObjectReference.Function.toString, [originMethod]);
+                    // }
+                    return result
                 }
             });
             const originDescriptor = this.originObjectReference.Reflect.getOwnPropertyDescriptor(parent, methodName) ?? {
@@ -813,5 +819,19 @@ export class Hooker extends StaticMethods {
             }
         }
         return false
+    }
+    /**
+     * Hooker实例使用的hook方法标记symbol
+     * @readonly
+     */
+    get internalSymbol(){
+        return this.HOOKED_TAG_SYMBOL
+    }
+    /**
+     * Hooker实例内引用的原生对象 可用于调用
+     * @readonly
+     */
+    get originReference(){
+        return this.originObjectReference
     }
 }
