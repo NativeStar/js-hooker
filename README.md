@@ -1,47 +1,51 @@
 # js-hooker
-一个轻量、简洁的 适用于浏览器环境的JavaScript Hook库
+[English](./README.md)
+|
+[Simplified Chinese](./README_zh.md)
+
+A lightweight and concise JavaScript hook library for browser environments.
 
 [Github](https://github.com/NativeStar/js-hooker)
 
 [NPM](https://www.npmjs.com/package/js-hooker)
-### 简介
-支持对函数、访问器、构造函数进行hook 并实现阻止执行、修改执行参数、修改返回值等功能
+### Introduction
+Supports hooking functions, accessors, and constructors, with features such as preventing execution, modifying execution arguments, and modifying return values.
 
-适用于网页脚本(如TamperMonkey脚本 浏览器扩展ContentScript)开发 需要对函数功能进行修改的情况
+Suitable for web script development, such as TamperMonkey scripts and browser extension ContentScripts, when function behavior needs to be modified.
 
-使用方法可参考项目https://github.com/NativeStar/Kyouka
+For usage examples, refer to https://github.com/NativeStar/Kyouka
 
-### 使用方法
-安装
+### Usage
+Install
 ```
 npm i js-hooker
 ```
-导出并创建实例
+Import and create an instance
 ```ts
 import {Hooker} from "js-hooker"
 const hooker=new Hooker();
 ```
-### 使用示例
+### Examples
 ```ts
-//阻止alert弹窗
+// Prevent alert popups
 hooker.hookMethod(window,"alert",{
     beforeMethodInvoke(args, abortController) {
         abortController.abort();
     }
 });
-// 打印fetch请求数据
+// Print fetch request data
 hooker.hookAsyncMethod(window,"fetch",{
     beforeMethodInvoke(args, abortController) {
         console.log(args)
     }
 });
-//阻止设置script元素的src属性
+// Prevent setting the src property of script elements
 hooker.hookAccessor(HTMLScriptElement.prototype, "src", {
     beforeSetterInvoke(arg, abortController) {
         abortController.abort();
     },
 });
-//拦截new Function操作并替换为执行空代码
+// Intercept new Function operations and replace them with empty code execution
 hooker.hookObject(window,"Function",{
     beforeConstruct(_args, abortController, tempObject, originConstruct) {
         abortController.abort();
@@ -49,200 +53,206 @@ hooker.hookObject(window,"Function",{
     },
 });
 ```
-### 文档
-#### 构造函数
-originReference:设置默认方法引用 仅建议在需要多个Hooker实例时使用
+### Documentation
+#### Constructor
+originReference: Sets the default method references. Only recommended when multiple Hooker instances are needed.
 
-enableBypassDefault:是否默认启用绕过hook检测
+enableBypassDefault: Whether to enable hook detection bypass by default.
 
-internalTagSymbol:设置用于判断方法hook的内部symbol 仅建议在需要多个Hooker实例时使用
-#### Hooker.getOriginReference() (静态方法)
-获取目前的原始方法引用快照 用于创建新Hooker实例时使用 亦可留作脚本自用
+internalTagSymbol: Sets the internal symbol used to identify hooked methods. Only recommended when multiple Hooker instances are needed.
+#### Hooker.getOriginReference() (static method)
+Gets a snapshot of the current original method references. It can be used when creating new Hooker instances, or kept for your own script usage.
 #### hookMethod(parent, methodName, hookOption)
-对指定的同步方法执行hook
+Hooks the specified synchronous method.
 
-parent:目标方法所在的的父对象
+parent: The parent object where the target method is located.
 
-methodName:目标方法名
+methodName: The target method name.
 
-hookOption:执行hook的设置:
+hookOption: Settings for the hook:
 
-- enableBypass?:hook时是否执行检测绕过 该项优先级高于enableBypassDefault
-- descriptor?:设置hook代理时使用的描述符 仅在对方法首次hook时生效
-- id?:唯一标识 如无需unhook或检查hook状态可忽略
-- beforeMethodInvoke?:在方法调用前触发的回调:(arg, abortController, thisArg, tempMethodResult, originMethod)
+- enableBypass?: Whether to perform detection bypass when hooking. This option has higher priority than enableBypassDefault.
+- descriptor?: The descriptor used when setting the hook proxy. Only takes effect when hooking the method for the first time.
+- id?: Unique identifier. Can be omitted if unhooking or checking hook status is not needed.
+- beforeMethodInvoke?: Callback triggered before the method is called: (arg, abortController, thisArg, tempMethodResult, originMethod)
 
-args:方法执行时传入的参数 可以进行修改
+args: Arguments passed to the method during execution. They can be modified.
 
-abortController:中断执行控制器 调用abort将中断方法执行
+abortController: Execution abort controller. Calling abort will abort method execution.
 
-thisArg:方法执行时的this指向
+thisArg: The this value during method execution.
 
-tempMethodResult:可修改的临时返回值 注意这里的返回值设置仅在中断执行时生效
+tempMethodResult: Modifiable temporary return value. Note that this return value setting only takes effect when execution is aborted.
 
-originMethod 原始方法 可调用(部分方法执行时注意this指向)
-- afterMethodInvoke?:在方法调用后触发的回调:(args, tempMethodResult, thisArg, originMethod)
+originMethod: The original method. It can be called directly. For some methods, pay attention to the this binding.
+- afterMethodInvoke?: Callback triggered after the method is called: (args, tempMethodResult, thisArg, originMethod)
 
-args:方法执行时传入的参数 此时修改参数已基本无意义
+args: Arguments passed to the method during execution. Modifying arguments at this point is usually meaningless.
 
-tempMethodResult:可修改的预期返回值
+tempMethodResult: Modifiable expected return value.
 
-thisArg:方法执行时的this指向
+thisArg: The this value during method execution.
 
-originMethod:原始方法 可调用(部分方法执行时注意this指向)
+originMethod: The original method. It can be called directly. For some methods, pay attention to the this binding.
 #### hookAsyncMethod(parent, methodName, hookOption)
-对指定的异步方法执行hook 使用方法和hookMethod方法一致
+Hooks the specified asynchronous method. Usage is the same as hookMethod.
 #### hookAccessor(parent, target, hookOption)
-对指定的访问器执行hook
+Hooks the specified accessor.
 
-parent:目标访问器所在的的父对象
+parent: The parent object where the target accessor is located.
 
-methodName:目标访问器名
+methodName: The target accessor name.
 
-hookOption:执行hook的设置:
-- enableBypass?:hook时是否执行检测绕过 该项优先级高于enableBypassDefault
-- descriptor?:设置hook代理时使用的描述符 仅在对方法首次hook时生效
-- id?:唯一标识 如无需unhook或检查hook状态可忽略
-- beforeGetterInvoke:在getter方法执行前触发:(abortController, thisArg, tempMethodResult)
+hookOption: Settings for the hook:
+- enableBypass?: Whether to perform detection bypass when hooking. This option has higher priority than enableBypassDefault.
+- descriptor?: The descriptor used when setting the hook proxy. Only takes effect when hooking the method for the first time.
+- id?: Unique identifier. Can be omitted if unhooking or checking hook status is not needed.
+- beforeGetterInvoke: Triggered before the getter method is executed: (abortController, thisArg, tempMethodResult)
 
-abortController:中断执行控制器 调用abort将中断方法执行
+abortController: Execution abort controller. Calling abort will abort method execution.
 
-thisArg:方法执行时的this指向
+thisArg: The this value during method execution.
 
-tempMethodResult:可修改的临时返回值 注意这里的返回值设置仅在中断执行时生效
-- afterGetterInvoke:(tempMethodResult, thisArg)
+tempMethodResult: Modifiable temporary return value. Note that this return value setting only takes effect when execution is aborted.
+- afterGetterInvoke: (tempMethodResult, thisArg)
 
-tempMethodResult:可修改的预期返回值
+tempMethodResult: Modifiable expected return value.
 
-thisArg:方法执行时的this指向
-- beforeSetterInvoke:(arg, abortController, thisArg)
+thisArg: The this value during method execution.
+- beforeSetterInvoke: (arg, abortController, thisArg)
 
-arg:方法执行时传入的参数 可以进行修改
+arg: Argument passed during method execution. It can be modified.
 
-abortController:中断执行控制器 调用abort将中断方法执行
+abortController: Execution abort controller. Calling abort will abort method execution.
 
-thisArg:方法执行时的this指向
+thisArg: The this value during method execution.
 #### hookObject(parent,objectName,hookOption)
-对指定的可实例化对象执行hook
+Hooks the specified instantiable object.
 
-parent:目标对象所在的的父对象
+parent: The parent object where the target object is located.
 
-methodName:目标对象名
+methodName: The target object name.
 
-hookOption:执行hook的设置:
-- enableBypass?:hook时是否执行检测绕过 该项优先级高于enableBypassDefault
-- descriptor?:设置hook代理时使用的描述符 仅在对方法首次hook时生效
-- id?:唯一标识 如无需unhook或检查hook状态可忽略
-- afterGet:尝试获取对象内属性时触发:(prop, tempResult)
+hookOption: Settings for the hook:
+- enableBypass?: Whether to perform detection bypass when hooking. This option has higher priority than enableBypassDefault.
+- descriptor?: The descriptor used when setting the hook proxy. Only takes effect when hooking the method for the first time.
+- id?: Unique identifier. Can be omitted if unhooking or checking hook status is not needed.
+- afterGet: Triggered when trying to get a property from the object: (prop, tempResult)
 
-prop:获取的参数名称
+prop: The name of the retrieved property.
 
-tempResult:可供修改的预期返回值
-- afterHas:通过Reflect.has或in操作符检测是否含有指定属性时触发:(prop,tempResult)
+tempResult: Modifiable expected return value.
+- afterHas: Triggered when checking whether a specified property exists through Reflect.has or the in operator: (prop,tempResult)
 
-prop:获取的参数名称
+prop: The name of the retrieved property.
 
-tempResult:可供修改的预期返回值
-- beforeConstruct:通过new操作符等方式创建新实例前触发:(args, abortController, tempObject,originConstruct)
+tempResult: Modifiable expected return value.
+- beforeConstruct: Triggered before creating a new instance through the new operator or similar methods: (args, abortController, tempObject,originConstruct)
 
-args:对构造方法传入的参数 可以进行修改
+args: Arguments passed to the constructor. They can be modified.
 
-abortController:中断执行控制器 调用abort将中断创建实例
+abortController: Execution abort controller. Calling abort will abort instance creation.
 
-tempObject:临时缓存的新实例返回 可用于修改返回值 注意这里修改的返回值仅在中断执行时生效
+tempObject: Temporary cache for the new instance return value. It can be used to modify the return value. Note that this modification only takes effect when execution is aborted.
 
-originConstruct:原始构造方法 可实例化
-- afterConstruct:通过new操作符等方式创建新实例后触发:(args,tempObject,originConstruct)
+originConstruct: The original constructor. It can be instantiated.
+- afterConstruct: Triggered after creating a new instance through the new operator or similar methods: (args,tempObject,originConstruct)
 
-args:对构造方法传入的参数 此时修改参数已基本无意义
+args: Arguments passed to the constructor. Modifying arguments at this point is usually meaningless.
 
-tempObject:可供修改的返回值 需为一个对象
+tempObject: Modifiable return value. It must be an object.
 
-originConstruct:原始构造方法 可实例化
-- beforeSet:往对象内设置属性时触发:(prop, value, abortController, tempNewValue, tempReturnValue)
+originConstruct: The original constructor. It can be instantiated.
+- beforeSet: Triggered when setting a property on the object: (prop, value, abortController, tempNewValue, tempReturnValue)
 
-prop:属性名
+prop: Property name.
 
-value:调用时传入要设定的属性值
+value: The property value passed during the call.
 
-abortController:中断执行控制器 调用abort将中断属性设置
+abortController: Execution abort controller. Calling abort will abort property setting.
 
-tempNewValue:可供修改的新属性值
+tempNewValue: Modifiable new property value.
 
-tempReturnValue:可供修改的返回值 用于Reflect.set等的返回
+tempReturnValue: Modifiable return value, used as the return value of Reflect.set and similar operations.
 
-- beforeDelete:尝试删除对象内属性时触发:(prop, deleteController, tempReturn)
+- beforeDelete: Triggered when trying to delete a property from the object: (prop, deleteController, tempReturn)
 
-prop:要删除的属性
+prop: The property to delete.
 
-deleteController:中断执行控制器 调用abort将中断属性删除
+deleteController: Deletion abort controller. Calling abort will abort property deletion.
 
-tempReturn:可供修改的返回值 用于Reflect.delete等的返回
-- beforeDefineProperty:通过defineProperty类方法定义对象内属性时触发:(prop, descriptor, abortController, tempResult)
+tempReturn: Modifiable return value, used as the return value of Reflect.delete and similar operations.
+- beforeDefineProperty: Triggered when defining a property on the object through defineProperty-like methods: (prop, descriptor, abortController, tempResult)
 
-prop:属性名
+prop: Property name.
 
-descriptor:传入的属性描述符
+descriptor: The property descriptor passed in.
 
-abortController:中断执行控制器 调用abort将中断设置属性
+abortController: Execution abort controller. Calling abort will abort property setting.
 
-tempResult:可修改的临时返回值 注意这里的返回值设置仅在中断执行时生效
+tempResult: Modifiable temporary return value. Note that this return value setting only takes effect when execution is aborted.
 #### unhook(type, parent, name, id,autoRestore)
-取消指定id的hook
+Removes the hook with the specified id.
 
-type:准备取消hook属性的类型
+type: The type of the property to unhook.
 
-parent:准备取消hook属性的父对象
+parent: The parent object of the property to unhook.
 
-name:准备取消hook属性的名称
+name: The name of the property to unhook.
 
-id:准备取消的hook id
+id: The hook id to remove.
 
-autoRestore:当目标方法已无挂载hook时是否自动还原原始属性
+autoRestore: Whether to automatically restore the original property when no hooks remain on the target method.
 #### restoreHook(type, parent, targetName)
-还原指定方法为原始方法并移除所有hook
+Restores the specified method to the original method and removes all hooks.
 
-type:准备还原属性的类型
+type: The type of the property to restore.
 
-parent:准备还原属性的父对象
+parent: The parent object of the property to restore.
 
-targetName:准备还原属性的名称
+targetName: The name of the property to restore.
 #### ensureOriginExecutable(target)
-传入被hook的对象并返回其原始对象 如果传入对象未被hook则将其原路返回
+Passes in a hooked object and returns its original object. If the passed object is not hooked, it is returned as is.
 
-target:目标对象
+target: Target object.
 #### isHooked(target)
-判断传入的对象是否已经过hook
+Checks whether the passed object has been hooked.
 
-target:目标对象
+target: Target object.
 #### isHookedById(type, parent, target, id)
-检查指定id的hook是否已挂载到指定属性上
+Checks whether the hook with the specified id is mounted on the specified property.
 
-type:被hook属性的类型
+type: The type of the hooked property.
 
-parent:准备检查hook属性的父对象
+parent: The parent object of the property to check.
 
-target:准备检查hook属性的名称
+target: The name of the property to check.
 
-id:目标hook id
-### 注意事项
-- 建议只创建一个Hooker实例 如果必须创建多个实例 应尽早通过Hooker.getOriginReference方法获取原始方法引用并在创建后来的Hooker实例时将其传入 避免使用到受污染的方法
+id: Target hook id.
+### internalSymbol (instance property)
+Returns the symbol used internally by the instance to mark hooked methods.
+
+### originReference(instance property)
+Returns some method references stored internally by the instance. These can be called to avoid using methods that may have been polluted by the page.
+
+### Notes
+- It is recommended to create only one Hooker instance. If multiple instances must be created, use Hooker.getOriginReference as early as possible to obtain the original method references and pass them when creating later Hooker instances, to avoid using polluted methods.
 ```ts
 const originRef=Hooker.getOriginReference();
 const hooker1=new Hooker({originReference:originRef})
 const hooker2=new Hooker({originReference:originRef})
 
 ```
-- 如果使用多个Hooker实例 应避免两个或以上的实例同时hook同一个方法  否则会导致hook失效或其他异常
+- If using multiple Hooker instances, avoid having two or more instances hook the same method at the same time. Otherwise, hooks may fail or other exceptions may occur.
 ```ts
-//不可多实例hook同一个方法!
-//这是错误示例
+// Do not hook the same method with multiple instances!
+// This is an incorrect example
 const hooker1=new Hooker();
 const hooker2=new Hooker();
 hooker1.hookMethod(window,"alert",{});
 hooker2.hookMethod(window,"alert",{});
 ```
-- 作为用户脚本或浏览器扩展使用时建议尽早注入(document-start阶段)并创建实例 避免页面保存方法引用导致hook失效或页面修改了原生方法导致异常
-- 该项目仅对Hook原生方法(alert open等)的行为进行测试 不保证在hook正常创建的方法时完全正常工作
-- 如果需要hook非原生方法 建议对该方法关闭hook隐藏(hookOption对象内传入enableBypass:false)
-- 由于eval函数的特殊性质 请谨慎对eval函数进行hook 否则某些网站会出现异常(拦截执行除外)
+- When used as a userscript or browser extension, it is recommended to inject it as early as possible, at the document-start stage, and create the instance early. This avoids hook failure caused by the page saving method references, or exceptions caused by the page modifying native methods.
+- This project only tests the behavior of hooking native methods such as alert and open. It does not guarantee fully correct behavior when hooking normally created methods.
+- If you need to hook non-native methods, it is recommended to disable hook hiding for that method by passing enableBypass:false in the hookOption object.
+- Due to the special nature of the eval function, hook the eval function with caution. Otherwise, some websites may behave abnormally, except when only intercepting execution.
