@@ -1,7 +1,7 @@
 # js-hooker
 [English](./README.md)
 |
-[Simplified Chinese](./README_zh.md)
+[简体中文](./README_zh.md)
 
 A lightweight and concise JavaScript hook library for browser environments.
 
