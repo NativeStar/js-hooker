@@ -94,6 +94,19 @@ tempMethodResult:可修改的预期返回值
 thisArg:方法执行时的this指向
 
 originMethod:原始方法 可调用(部分方法执行时注意this指向)
+- onInvokingError?:当执行方法发生异常时调用:(args, throwAbortController, tempError, tempResult,thisArg, originMethod)
+
+args:方法执行时传入的参数 此时修改参数已基本无意义
+
+throwAbortController:中断异常抛出控制器 调用abort将中断异常抛出并正常返回tempResult中的值
+
+tempError:抛出的异常实例 可修改并影响最终抛出内容
+
+tempResult:可修改的临时返回值 将在中断抛出后正常返回
+
+thisArg:方法执行时的this指向
+
+originMethod 原始方法 可调用(部分方法执行时注意this指向)
 #### hookAsyncMethod(parent, methodName, hookOption)
 对指定的异步方法执行hook 使用方法和hookMethod方法一致
 #### hookAccessor(parent, target, hookOption)

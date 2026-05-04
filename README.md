@@ -94,6 +94,19 @@ tempMethodResult: Modifiable expected return value.
 thisArg: The this value during method execution.
 
 originMethod: The original method. It can be called directly. For some methods, pay attention to the this binding.
+- onInvokingError?: Called when an exception occurs during method execution: (args, throwAbortController, tempError, tempResult, thisArg, originMethod)
+
+args: Arguments passed to the method during execution. Modifying arguments at this point is usually meaningless.
+
+throwAbortController: Exception throw abort controller. Calling abort will stop the exception from being thrown and return the value in tempResult normally.
+
+tempError: The thrown exception instance. It can be modified and will affect the final thrown content.
+
+tempResult: Modifiable temporary return value. It will be returned normally after aborting the exception throw.
+
+thisArg: The this value during method execution.
+
+originMethod: The original method. It can be called directly. For some methods, pay attention to the this binding.
 #### hookAsyncMethod(parent, methodName, hookOption)
 Hooks the specified asynchronous method. Usage is the same as hookMethod.
 #### hookAccessor(parent, target, hookOption)
