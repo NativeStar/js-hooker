@@ -85,7 +85,16 @@ export class Hooker extends StaticMethods {
                         if (error.stack) {
                             error.stack = filterErrorStack(this.originObjectReference, error.stack);
                         }
-                        throw error;
+                        const tempError: TempHookResultWrapper<Error> = {
+                            current: error
+                        }
+                        for (const currentHookOption of hookItem.option) {
+                            currentHookOption.onInvokingError?.(args, abortController, tempError, tempResult, thisArg, originMethod as AnyFunctionType);
+                        }
+                        if (abortController.signal.aborted) {
+                            return tempResult.current;
+                        }
+                        throw tempError.current;
                     }
                     for (const currentHookOption of hookItem.option) {
                         currentHookOption.afterMethodInvoke?.(args, tempResult, thisArg, originMethod as AnyFunctionType);
@@ -102,7 +111,7 @@ export class Hooker extends StaticMethods {
                     if (p === this.HOOKED_TAG_SYMBOL) {
                         return originMethod;
                     }
-                    const result=this.originObjectReference.Reflect.get(target, p);
+                    const result = this.originObjectReference.Reflect.get(target, p);
                     //TODO 之后再测试
                     // if (p==="toString"&&result===this.originObjectReference.Function.toString) {
                     //     console.log("test call str!");
@@ -215,7 +224,17 @@ export class Hooker extends StaticMethods {
                             if (error.stack) {
                                 error.stack = filterErrorStack(this.originObjectReference, error.stack);
                             }
-                            reject(error as Error)
+                            const tempError: TempHookResultWrapper<Error> = {
+                                current: error
+                            }
+                            for (const currentHookOption of hookItem.option) {
+                                currentHookOption.onInvokingError?.(args, abortController, tempError, tempResult, thisArg, originMethod as AnyFunctionType);
+                            }
+                            if (abortController.signal.aborted) {
+                                resolve(tempResult.current);
+                                return
+                            }
+                            reject(tempError.current)
                             return
                         }
                         for (const currentHookOption of hookItem.option) {
@@ -824,14 +843,14 @@ export class Hooker extends StaticMethods {
      * Hooker实例使用的hook方法标记symbol
      * @readonly
      */
-    get internalSymbol(){
+    get internalSymbol() {
         return this.HOOKED_TAG_SYMBOL
     }
     /**
      * Hooker实例内引用的原生对象 可用于调用
      * @readonly
      */
-    get originReference(){
+    get originReference() {
         return this.originObjectReference
     }
 }

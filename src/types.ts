@@ -56,6 +56,16 @@ export interface MethodHookOption<F extends AnyFunctionType, R = ReturnType<F>> 
      * @param originMethod 原始方法 可调用(部分方法执行时注意this指向)
      */
     afterMethodInvoke?: (args: Parameters<F>, tempMethodResult: TempHookResultWrapper<R>, thisArg: ThisParameterType<F>, originMethod: F) => void;
+    /**
+     * 当方法执行发生异常时触发
+     * @param args 方法执行时传入的参数 此时修改参数已基本无意义
+     * @param throwAbortController 中断异常抛出控制器 调用abort将中断异常抛出并正常返回tempResult中的值
+     * @param tempError 发生的异常实例 可修改
+     * @param tempResult 可修改的临时返回值 将在中断抛出后正常返回
+     * @param thisArg 方法执行时的this指向
+     * @param originMethod 原始方法 可调用(部分方法执行时注意this指向)
+     */
+    onInvokingError?: (args: Parameters<F>, throwAbortController: AbortController, tempError: TempHookResultWrapper<unknown>, tempResult:TempHookResultWrapper<R>,thisArg: ThisParameterType<F>, originMethod: F) => void
 }
 export interface AccessorHookOption<P extends object, K extends keyof P> {
     /**
