@@ -248,6 +248,46 @@ id:目标hook id
 ### originReference(实例属性)
 返回实例内部保存的部分方法引用 获取后可调用避免使用可能被页面污染的方法
 
+## 快速Hook工具
+在进行一些简单、重复的hook操作时降低代码量 均为静态方法
+### FastUtils.hookAbortMethodExecute(hooker,parent,methodName,methodType,onExecuteCallback,defaultReturnValue)
+用于快速创建拦截方法执行的hook
+
+hooker:Hooker实例
+
+parent:目标方法所在父对象
+
+methodName:目标方法名
+
+methodType:目标方法类型,值为"async"或"sync"
+
+onExecuteCallback?:方法执行时触发的回调
+
+defaultReturnValue?:方法执行时返回的默认值
+
+### hookInterruptMethodExecute(hooker,parent,methodName,methodType,interruptType)
+当方法执行时触发debugger断点
+
+hooker:Hooker实例
+
+parent:目标方法所在父对象
+
+methodName:目标方法名
+
+methodType:目标方法类型,值为"async"或"sync"
+
+interruptType:中断触发类型,值为"before"(执行前触发) "after"(执行后触发) "all"(执行前后都触发)
+
+### hookPrintMethodExecuteArgs(hooker,parent,methodName,methodType)
+用于快速创建打印方法参数的hook
+
+hooker:Hooker实例
+
+parent:目标方法所在父对象
+
+methodName:目标方法名
+
+methodType:目标方法类型,值为"async"或"sync"
 ### 注意事项
 - 建议只创建一个Hooker实例 如果必须创建多个实例 应尽早通过Hooker.getOriginReference方法获取原始方法引用并在创建后来的Hooker实例时将其传入 避免使用到受污染的方法
 ```ts

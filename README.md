@@ -248,6 +248,48 @@ Returns the symbol used internally by the instance to mark hooked methods.
 ### originReference(instance property)
 Returns some method references stored internally by the instance. These can be called to avoid using methods that may have been polluted by the page.
 
+## Fast Hook Utilities
+Reduces boilerplate for simple and repetitive hook operations. All methods are static.
+
+### FastUtils.hookAbortMethodExecute(hooker, parent, methodName, methodType, onExecuteCallback, defaultReturnValue)
+Quickly creates a hook that intercepts method execution.
+
+hooker: Hooker instance.
+
+parent: The parent object where the target method is located.
+
+methodName: The target method name.
+
+methodType: The target method type. Value must be `"async"` or `"sync"`.
+
+onExecuteCallback?: Callback triggered when the method is executed.
+
+defaultReturnValue?: Default return value used when the method execution is intercepted.
+
+### FastUtils.hookInterruptMethodExecute(hooker, parent, methodName, methodType, interruptType)
+Triggers a `debugger` breakpoint when the method executes.
+
+hooker: Hooker instance.
+
+parent: The parent object where the target method is located.
+
+methodName: The target method name.
+
+methodType: The target method type. Value must be `"async"` or `"sync"`.
+
+interruptType: Breakpoint trigger timing. Value must be `"before"` (trigger before execution), `"after"` (trigger after execution), or `"all"` (trigger both before and after execution).
+
+### FastUtils.hookPrintMethodExecuteArgs(hooker, parent, methodName, methodType)
+Quickly creates a hook that prints method arguments.
+
+hooker: Hooker instance.
+
+parent: The parent object where the target method is located.
+
+methodName: The target method name.
+
+methodType: The target method type. Value must be `"async"` or `"sync"`.
+
 ### Notes
 - It is recommended to create only one Hooker instance. If multiple instances must be created, use Hooker.getOriginReference as early as possible to obtain the original method references and pass them when creating later Hooker instances, to avoid using polluted methods.
 ```ts
