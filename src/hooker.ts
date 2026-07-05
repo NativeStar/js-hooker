@@ -1,6 +1,6 @@
 import { OriginObjects } from "./originObjects.js";
 import { createBypassToStringMethod, filterErrorStack } from "./util.js";
-import type { AnyFunctionType, MethodByName, TempHookResultWrapper, MethodHookOption, AccessorHookOption, AccessorHookMapItem, MethodHookMapItem, ObjectHookOption, ObjectHookMapItem, ConstructorPropertyName, AnyConstructorType, HookType, HookerConstruct } from "./types.js"
+import type { AnyFunctionType, MethodByName, TempHookResultWrapper, MethodHookOption, AccessorHookOption, AccessorHookMapItem, MethodHookMapItem, ObjectHookOption, ObjectHookMapItem, AnyConstructorType, HookType, HookerConstruct } from "./types.js"
 import { StaticMethods } from "./staticMethods.js";
 export class Hooker extends StaticMethods {
     private readonly hookedMethodMap: WeakMap<object, Map<string, MethodHookMapItem>> = new WeakMap();
@@ -459,7 +459,7 @@ export class Hooker extends StaticMethods {
      * @example
      * hooker.hookObject(window, "Function", {})
      */
-    hookObject<P extends object, K extends ConstructorPropertyName<P>>(parent: P, target: K, hookOption: ObjectHookOption<Extract<P[K], AnyConstructorType>>): boolean;
+    hookObject<P extends object, K extends Extract<keyof P, string>,C extends Extract<P[K], AnyConstructorType>,F extends Extract<P[K], AnyFunctionType>>(parent: P, target: K, hookOption: ObjectHookOption<C,F>): boolean;
     hookObject<T extends AnyConstructorType>(parent: object, target: string, hookOption: ObjectHookOption<T>): boolean
     hookObject(parent: any, objectName: string, hookOption: ObjectHookOption<AnyConstructorType>): boolean {
         try {
@@ -489,6 +489,40 @@ export class Hooker extends StaticMethods {
                 configurable: true,
             });
             const hookProxy = new this.originObjectReference.Proxy(originObject, {
+                apply: (target, thisArg, argArray) => {
+                    const hookItems = this.getHookItem("object", parent, objectName);
+                    const tempResult: TempHookResultWrapper<any> = { current: null };
+                    if (!hookItems || hookItems.option.length == 0) {
+                        //没有hook
+                        try {
+                            return this.originObjectReference.Reflect.apply(originObject, thisArg, argArray);
+                        } catch (error: any) {
+                            if (error.stack) {
+                                error.stack = filterErrorStack(this.originObjectReference, error.stack);
+                            }
+                            throw error;
+                        }
+                    }
+                    try {
+                        const abortController = new this.originObjectReference.AbortController();
+                        for (const beforeApplyOption of hookItems.option) {
+                            beforeApplyOption.beforeApply?.(argArray, abortController, thisArg, tempResult, target as AnyFunctionType);
+                        }
+                        if (abortController.signal.aborted) {
+                            return tempResult.current;
+                        }
+                        tempResult.current = this.originObjectReference.Reflect.apply(originObject, thisArg, argArray);
+                        for (const hookOption of hookItems.option) {
+                            hookOption.afterApply?.(argArray, thisArg, tempResult, target as AnyFunctionType);
+                        }
+                    } catch (error:any) {
+                        if (error.stack) {
+                            error.stack = filterErrorStack(this.originObjectReference, error.stack);
+                        }
+                        throw error;
+                    }
+                    return tempResult.current;
+                },
                 get: (target, p, receiver) => {
                     if (p === this.HOOKED_TAG_SYMBOL) {
                         return originObject;

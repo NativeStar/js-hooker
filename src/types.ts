@@ -116,7 +116,7 @@ export interface AccessorHookMapItem<T = any> {
     originDescriptor: TypedPropertyDescriptor<any>
     option: AccessorHookOption<any, any>[];
 }
-export interface ObjectHookOption<C extends AnyConstructorType = AnyConstructorType> {
+export interface ObjectHookOption<C extends AnyConstructorType = AnyConstructorType,F extends AnyFunctionType = AnyFunctionType> {
     /**
      * 唯一标识 如无需unhook或检查hook状态可忽略
      */
@@ -182,11 +182,28 @@ export interface ObjectHookOption<C extends AnyConstructorType = AnyConstructorT
      * @param tempResult 可修改的临时返回值 注意这里的返回值设置仅在中断执行时生效
      */
     beforeDefineProperty?: (prop: string | symbol, descriptor: PropertyDescriptor, abortController: AbortController, tempResult: TempHookResultWrapper<boolean>) => void
+    /**
+     * 直接调用该对象时触发
+     * @param args 调用时传入的参数 可以进行修改
+     * @param abortController 中断调用控制器 调用abort将中断对象调用
+     * @param thisArg 方法执行时的this指向
+     * @param tempResult 可修改的临时返回值 注意这里的返回值设置仅在中断执行时生效
+     * @param originMethod 原始对象
+     */
+    beforeApply?: (args: Parameters<F>, abortController: AbortController,thisArg:ThisParameterType<F>, tempResult: TempHookResultWrapper<ReturnType<F>>, originMethod: F) => void;
+    /**
+     * 对象调用后触发
+     * @param args 调用时传入的参数 此时修改参数已基本无意义
+     * @param thisArg 方法执行时的this指向
+     * @param tempResult 可供修改的返回值
+     * @param originMethod 原始对象
+     */
+    afterApply?: (args: Parameters<F>,thisArg:ThisParameterType<F>,tempResult: TempHookResultWrapper<ReturnType<F>>, originMethod: F) => void;
 }
-export interface ObjectHookMapItem<C extends AnyConstructorType = AnyConstructorType> {
-    originObject: C;
+export interface ObjectHookMapItem<C extends AnyConstructorType = AnyConstructorType,F extends AnyFunctionType = AnyFunctionType> {
+    originObject: C|F;
     originParent: object;
     objectName: string
-    option: ObjectHookOption<C>[];
+    option: ObjectHookOption<C,F>[];
     originDescriptor: TypedPropertyDescriptor<any>
 }
