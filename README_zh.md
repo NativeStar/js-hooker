@@ -171,11 +171,33 @@ tempObject:临时缓存的新实例返回 可用于修改返回值 注意这里�
 originConstruct:原始构造方法 可实例化
 - afterConstruct:通过new操作符等方式创建新实例后触发:(args,tempObject,originConstruct)
 
-args:对构造方法传入的参数 此时修改参数已基本无意义
+args:对构造方法传入的参数 此时修改参数已c
 
 tempObject:可供修改的返回值 需为一个对象
 
 originConstruct:原始构造方法 可实例化
+- beforeApply:尝试调用该对象前触发:(args,abortController,thisArg,tempResult,originMethod)
+
+args:对方法传入的参数 可以进行修改
+
+abortController:中断执行控制器 调用abort将中断调用
+
+thisArg:调用时方法的this对象
+
+tempResult:临时缓存的返回值 可修改 注意这里修改的返回值仅在中断执行时生效
+
+originMethod:原始方法 可调用
+
+- afterApply:尝试调用该对象后触发:(args,thisArg,tempResult,originMethod)
+
+args:对方法传入的参数 此时修改参数已对方法传入的参数
+
+thisArg:调用时方法的this对象
+
+tempResult:可供修改的返回值
+
+originMethod:原始方法 可调用
+
 - beforeSet:往对象内设置属性时触发:(prop, value, abortController, tempNewValue, tempReturnValue)
 
 prop:属性名

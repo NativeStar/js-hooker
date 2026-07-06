@@ -176,6 +176,28 @@ args: Arguments passed to the constructor. Modifying arguments at this point is 
 tempObject: Modifiable return value. It must be an object.
 
 originConstruct: The original constructor. It can be instantiated.
+- beforeApply: Triggered before trying to call the object: (args, abortController, thisArg, tempResult, originMethod)
+
+args: Arguments passed to the method. They can be modified.
+
+abortController: Execution abort controller. Calling abort will abort the call.
+
+thisArg: The this object during the call.
+
+tempResult: Temporary cached return value. It can be modified. Note that this modification only takes effect when execution is aborted.
+
+originMethod: The original method. It can be called directly.
+
+- afterApply: Triggered after trying to call the object: (args, thisArg, tempResult, originMethod)
+
+args: Arguments passed to the method. Modifying arguments at this point is usually meaningless.
+
+thisArg: The this object during the call.
+
+tempResult: Modifiable return value.
+
+originMethod: The original method. It can be called directly.
+
 - beforeSet: Triggered when setting a property on the object: (prop, value, abortController, tempNewValue, tempReturnValue)
 
 prop: Property name.
